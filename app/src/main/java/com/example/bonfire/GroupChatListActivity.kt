@@ -29,6 +29,12 @@ class GroupChatListActivity : AppCompatActivity() {
     val uid = FirebaseAuth.getInstance().currentUser?.uid
     val db = Firebase.firestore
     val helper = Helper()
+    private fun notifPrefs() = getSharedPreferences("notif_limits", MODE_PRIVATE)
+    private fun limitEnabledKey(friendId: String) = "limit_enabled_$friendId"
+    private fun unopenedKey(friendId: String) = "unopened_$friendId"
+
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -138,6 +144,11 @@ class GroupChatListActivity : AppCompatActivity() {
                         val muteItem = popup.menu.findItem(R.id.action_mute)
                         muteItem.title = if (isFriendMuted == 1) "Unmute" else "Mute"
 
+                        // same for if limited notifications
+                        val isFriendLimited = notifPrefs().getBoolean(limitEnabledKey(friendId), false)
+                        val limitItem = popup.menu.findItem(R.id.action_limit)
+                        limitItem.title = if (isFriendLimited) "Unlimit notifications" else "Limit notifications"
+
                         popup.setOnMenuItemClickListener { item ->
                             when (item.itemId) {
                                 R.id.action_mute -> {
@@ -165,6 +176,24 @@ class GroupChatListActivity : AppCompatActivity() {
                                     }
                                     groupChatList.removeView(friendView)
                                     Toast.makeText(baseContext, "Blocked ${friendName.text}", Toast.LENGTH_SHORT).show()
+                                    true
+                                }
+                                R.id.action_limit -> {
+                                    // Save changes when user toggles
+                                    notifPrefs().edit{
+                                        putBoolean(limitEnabledKey(friendId), !isFriendLimited)
+                                    }
+
+                                    if (isFriendLimited) {
+                                        Toast.makeText(baseContext, "Notifications unlimited from ${friendName.text}", Toast.LENGTH_SHORT).show()
+                                        // Optional (recommended): if user enables limiting, reset the counter so they don’t get “stuck”
+                                        notifPrefs().edit {
+                                            putInt(unopenedKey(friendId), 0)
+                                        }
+                                    } else{
+                                        Toast.makeText(baseContext, "Notifications limited from ${friendName.text}", Toast.LENGTH_SHORT).show()
+                                    }
+
                                     true
                                 }
                                 else -> false

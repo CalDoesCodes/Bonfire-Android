@@ -6,8 +6,6 @@ import androidx.test.espresso.action.ViewActions.*
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.hamcrest.Matchers.allOf
-import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -16,7 +14,7 @@ class AccountActivityTest {
     @Test
     fun testActivityLaunch() {
         ActivityScenario.launch(AccountActivity::class.java).use {
-            onView(withId(R.id.account_user)).check(matches(isDisplayed()))
+            onView(withId(R.id.account_name)).check(matches(isDisplayed()))
             onView(withId(R.id.account_email)).check(matches(isDisplayed()))
             onView(withId(R.id.account_avatar)).check(matches(isDisplayed()))
             onView(withId(R.id.account_grid)).check(matches(isDisplayed()))

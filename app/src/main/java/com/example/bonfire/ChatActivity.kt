@@ -43,7 +43,6 @@ class ChatActivity : AppCompatActivity() {
 
     private fun notifPrefs() = getSharedPreferences("notif_limits", MODE_PRIVATE)
     private fun unopenedKey(friendId: String) = "unopened_$friendId"
-    private fun limitEnabledKey(friendId: String) = "limit_enabled_$friendId"
     private val OPEN_CHAT_KEY = "open_chat_friendId"
     private lateinit var imagePickerLauncher: ActivityResultLauncher<String>
     private lateinit var userData: Map<String, Object>
@@ -63,29 +62,6 @@ class ChatActivity : AppCompatActivity() {
             friendId = null
         }
         currentFriendId = friendId
-
-        val limitPings: CheckBox = findViewById(R.id.limitPings)
-
-        if (friendId != null) {
-            // Load saved state
-            val enabled = notifPrefs().getBoolean(limitEnabledKey(friendId), false)
-            limitPings.isChecked = enabled
-
-            // Save changes when user toggles
-            limitPings.setOnCheckedChangeListener { _, isChecked ->
-                notifPrefs().edit()
-                    .putBoolean(limitEnabledKey(friendId), isChecked)
-                    .apply()
-
-                // Optional (recommended): if user enables limiting, reset the counter so they don’t get “stuck”
-                if (isChecked) {
-                    notifPrefs().edit().putInt(unopenedKey(friendId), 0).apply()
-                }
-            }
-        } else {
-            // No friendId? Disable the option
-            limitPings.isEnabled = false
-        }
 
         val recyclerView: RecyclerView = findViewById(R.id.chat_messages_RecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)

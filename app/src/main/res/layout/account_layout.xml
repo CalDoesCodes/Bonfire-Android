@@ -20,54 +20,76 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-
-        <LinearLayout
-            android:orientation="vertical"
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:padding="16dp">
-
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/account_avatar"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:src="@drawable/default_pfp"
-                android:layout_gravity="center_horizontal"
-                app:shapeAppearanceOverlay="@style/Circular" />
-
-            <TextView
-                android:id="@+id/account_user"
-                android:layout_width="wrap_content"
+            android:layout_height="match_parent">
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:padding="4dp"
-                android:text="Loading..."
-                android:textSize="24sp"
-                android:textStyle="bold" />
+                android:padding="20dp">
 
-            <TextView
-                android:id="@+id/account_email"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:text="Loading..."
-                android:textSize="16sp" />
+                <!--USER PAGE-->
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/account_avatar"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@drawable/default_pfp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="16dp"
+                    app:shapeAppearanceOverlay="@style/Circular" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingTop="8dp"
-                android:text="Select a profile picture"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:layout_gravity="center_horizontal"/>
-            
+                <TextView
+                    android:id="@+id/account_displayName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Loading..."
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/account_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Loading..."
+                    android:textSize="16sp"
+                    android:padding="2dp"/>
+                <TextView
+                    android:id="@+id/account_email"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="loading@gmail.com..."
+                    android:textSize="16sp"
+                    android:padding="2dp"/>
+
+                <TextView
+                    android:id="@+id/account_bio"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Loading bio..."
+                    android:textSize="16sp"
+                    android:maxWidth="250dp"
+                    android:padding="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="24dp"
+                    android:text="Select a profile picture"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_gravity="center_horizontal"/>
+
+                <!--USER EDIT-->
                 <GridLayout
                     android:id="@+id/account_grid"
                     android:layout_gravity="center"
                     android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
+                    android:layout_height="200dp"
                     android:rowCount="3"
                     android:columnCount="5"
                     android:alignmentMode="alignBounds"
@@ -242,32 +264,103 @@
                         app:shapeAppearanceOverlay="@style/Circular" />
                 </GridLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="start"
-                android:paddingTop="8dp"
-                android:text="Blocked Users"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:paddingTop="24dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Display Name"
+                    android:textSize="18sp"
+                    android:textStyle="bold"/>
 
-            <ScrollView
-                android:layout_width="match_parent"
-                android:layout_height="100dp"
-                android:layout_marginTop="4dp"
-                android:background="@color/semi_dark_brown">
-
-                <LinearLayout
-                    android:id="@+id/account_blocked_list"
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/displayname_TextInputLayout"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="8dp">
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    app:boxCornerRadiusBottomEnd="5dp"
+                    app:boxCornerRadiusBottomStart="5dp"
+                    app:boxCornerRadiusTopEnd="5dp"
+                    app:boxCornerRadiusTopStart="5dp">
 
-                </LinearLayout>
-            </ScrollView>
-        </LinearLayout>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/displayname_editText"
+                        android:inputType="text"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"/>
+                </com.google.android.material.textfield.TextInputLayout>
 
+                <TextView
+                    android:paddingTop="12dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Bio"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/bio_TextInputLayout"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    app:boxCornerRadiusBottomEnd="5dp"
+                    app:boxCornerRadiusBottomStart="5dp"
+                    app:boxCornerRadiusTopEnd="5dp"
+                    app:boxCornerRadiusTopStart="5dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/bio_editText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <Button
+                    android:id="@+id/user_save_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:text="Save changes"
+                    style="@style/Widget.Material3.Button.ElevatedButton">
+                </Button>
+
+
+                <!--BLOCKED USERS-->
+                <TextView
+                    android:paddingTop="24dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Blocked Users"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <ScrollView
+                    android:layout_width="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginTop="4dp"
+                    android:background="@color/semi_dark_brown"
+                    android:layout_height="0dp">
+
+                    <LinearLayout
+                        android:id="@+id/account_blocked_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+
+                    </LinearLayout>
+                </ScrollView>
+            </LinearLayout>
+        </ScrollView>
     </androidx.cardview.widget.CardView>
 
     <include

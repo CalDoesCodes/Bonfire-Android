@@ -22,6 +22,9 @@ import androidx.core.view.size
 import com.bumptech.glide.Glide
 import com.google.firebase.storage.storage
 import androidx.core.content.edit
+import com.google.android.material.textfield.TextInputEditText
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.SetOptions
 
 
 class AccountActivity : AppCompatActivity() {
@@ -48,9 +51,14 @@ class AccountActivity : AppCompatActivity() {
         notificationManager.createNotificationChannel(notificationChannel)
 
         val user = FirebaseAuth.getInstance().currentUser
-        val accountUserText: TextView = findViewById(R.id.account_user)
+        val accountUserText: TextView = findViewById(R.id.account_name)
+        val accountDisplayUserText: TextView = findViewById(R.id.account_displayName)
         val accountEmailText: TextView = findViewById(R.id.account_email)
+        val accountBioText : TextView = findViewById(R.id.account_bio)
         val accountAvatarImageView: ShapeableImageView = findViewById(R.id.account_avatar)
+
+        val displaynameEditText : TextInputEditText = findViewById(R.id.displayname_editText)
+        val bioEditText : TextInputEditText = findViewById(R.id.bio_editText)
         
         val db = Firebase.firestore
         // get details of account
@@ -61,8 +69,35 @@ class AccountActivity : AppCompatActivity() {
                 if (document != null && document.exists()) {
                     Log.d(tag, "DocumentSnapshot data: ${document.data}")
                     val data = document.data
+
+                    // Update views to display accurate user info on screen
                     accountEmailText.text = (data?.get("email") ?: "") as String
                     accountUserText.text = (data?.get("name") ?: "") as String
+
+                    var displayName = (data?.get("displayName") ?: "") as String
+                    accountDisplayUserText.text = displayName
+                    displaynameEditText.setText(displayName)
+
+                    var bio = (data?.get("bio") ?: "") as String
+                    accountBioText.text = bio
+                    bioEditText.setText(bio)
+
+
+                    // button listener to update user data when pressed
+                    val userSaveButton : Button = findViewById(R.id.user_save_button)
+                    userSaveButton.setOnClickListener {
+                        bio = (bioEditText.text ?: "").toString()
+                        accountBioText.text = bio
+                        displayName = (displaynameEditText.text ?: "").toString()
+                        accountDisplayUserText.text = displayName
+
+                        val updatedUserData = hashMapOf(
+                            "displayName" to displayName,
+                            "bio" to bio
+                        )
+                        docRef.set(updatedUserData, SetOptions.merge())
+                    }
+
 
                     // Create a reference to a file from a Google Cloud Storage URI
                     val avatarPath = (data?.get("avatar") ?: "") as String
