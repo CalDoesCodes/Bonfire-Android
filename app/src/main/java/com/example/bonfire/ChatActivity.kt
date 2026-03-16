@@ -49,6 +49,7 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var userData: Map<String, Object>
     var emojiMenuOpen = false
     var emojisPopulated = false
+    var messagesPath = ""
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -91,7 +92,7 @@ class ChatActivity : AppCompatActivity() {
 
 
         // if friendId == null, we are in global chat
-        var messagesPath = "messages"
+        messagesPath = "messages"
         if (isPrivateChat(friendId)){
             val chatIdArray = arrayOf(uid, friendId)
             chatIdArray.sort()
@@ -103,13 +104,13 @@ class ChatActivity : AppCompatActivity() {
             ActivityResultContracts.GetContent()
         ) { uri: Uri? ->
             uri?.let {
-                uploadImageToFirebase(it, userData, messagesPath, recyclerView)
+                uploadImageToFirebase(it, userData, recyclerView)
             }
         }
 
         val sendImageButton: ImageView = findViewById(R.id.chat_MessageBar_ImageButton)
         sendImageButton.setOnClickListener {
-            messageSendDropList(messagesPath)
+            messageSendDropList()
         }
 
         // get data of user so you don't have to request it every time
@@ -118,7 +119,7 @@ class ChatActivity : AppCompatActivity() {
         .addOnSuccessListener { document ->
             if (document != null) {
                 userData = document.data as Map<String, Object>
-                createSendButton(userData, messagesPath, recyclerView)
+                createSendButton(userData, recyclerView)
                 setChatName(friendId ?: "")
             } else {
                 Log.d(TAG, "No such document")
@@ -196,13 +197,13 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    fun messageSendDropList(messagesPath:String) {
+    fun messageSendDropList() {
         val optionsButton: ImageView = findViewById(R.id.chat_MessageBar_ImageButton)
         val emojiList: HorizontalScrollView = findViewById(R.id.emoji_list)
 
         optionsButton.setOnClickListener { view ->
             if (!emojisPopulated){
-                populateEmojiList(messagesPath)
+                populateEmojiList()
             }
 
             // if emoji menu already open, close it
@@ -213,6 +214,7 @@ class ChatActivity : AppCompatActivity() {
             val popup = PopupMenu(this, view)
             popup.menuInflater.inflate(R.menu.message_options_menu, popup.menu)
 
+            // listener for when user clicks on message options dropdown menu
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     R.id.action_image -> {
@@ -225,6 +227,12 @@ class ChatActivity : AppCompatActivity() {
                         emojiMenuOpen = true
                         true
                     }
+                    R.id.action_record -> {
+                        val voiceRecorder = VoiceRecorder()
+                        voiceRecorder.openVoiceRecorderDialog(this)
+                        true
+                    }
+
                     else -> false
                 }
             }
@@ -232,8 +240,24 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    fun recordVoiceMessage(){
-        
+    fun sendVoiceMessage(path:String){
+        val messageData = hashMapOf(
+            "displayName" to userData["name"],
+            "photoURL" to userData["avatar"],
+            "voiceURL" to path,
+            "read" to false,
+            "senderId" to uid,
+            "text" to "",
+            "timestamp" to Timestamp.now()
+        )
+
+        db.collection(messagesPath).document().set(messageData)
+
+        val emailEditText: TextInputEditText = findViewById(R.id.chat_MessageBar_TextInputEditText)
+        emailEditText.setText("")
+        val recyclerView: RecyclerView = findViewById(R.id.chat_messages_RecyclerView)
+        recyclerView.scrollToPosition(chatList.size - 1)
+
     }
 
     fun closeEmojiList(){
@@ -248,7 +272,7 @@ class ChatActivity : AppCompatActivity() {
     /**
     Download all emojis in firebase Emojis/ and add to scrollview.
      */
-    fun populateEmojiList(messagesPath:String){
+    fun populateEmojiList(){
         val emojiList: LinearLayout = findViewById(R.id.emoji_list_linearLayout)
         val storage = Firebase.storage
         val listRef = storage.reference.child("Emojis")
@@ -268,7 +292,7 @@ class ChatActivity : AppCompatActivity() {
 
                         emojiImage.setOnClickListener {
                             closeEmojiList()
-                            sendImageMessage(uri.toString(), userData, messagesPath)
+                            sendImageMessage(uri.toString(), userData)
                         }
                     }.addOnFailureListener { e ->
                         Log.e(TAG, "Couldn't get avatar uri: $e")
@@ -281,7 +305,7 @@ class ChatActivity : AppCompatActivity() {
         emojisPopulated = true
     }
 
-    private fun uploadImageToFirebase(imageUri: Uri, userData:Map<String, Object>, messagesPath:String, recyclerView: RecyclerView) {
+    private fun uploadImageToFirebase(imageUri: Uri, userData:Map<String, Object>, recyclerView: RecyclerView) {
         val storageRef = Firebase.storage.reference
         val fileName = UUID.randomUUID().toString()
         val imageRef = storageRef.child("Chat_Media/$fileName")
@@ -290,7 +314,7 @@ class ChatActivity : AppCompatActivity() {
         .addOnSuccessListener {
             // IMPORTANT: Get download URL
             imageRef.downloadUrl.addOnSuccessListener { downloadUri ->
-                sendImageMessage(downloadUri.toString(), userData, messagesPath)
+                sendImageMessage(downloadUri.toString(), userData)
                 val emailEditText: TextInputEditText = findViewById(R.id.chat_MessageBar_TextInputEditText)
                 emailEditText.setText("")
                 recyclerView.scrollToPosition(chatList.size - 1)
@@ -306,7 +330,7 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    private fun sendImageMessage(imageUrl: String, userData:Map<String, Object>, messagesPath:String) {
+    private fun sendImageMessage(imageUrl: String, userData:Map<String, Object>) {
         val messageData = hashMapOf(
             "displayName" to userData["name"],
             "photoURL" to userData["avatar"],
@@ -320,7 +344,7 @@ class ChatActivity : AppCompatActivity() {
         db.collection(messagesPath).document().set(messageData)
     }
 
-    fun createSendButton(userData:Map<String, Object>, messagesPath:String, recyclerView: RecyclerView){
+    fun createSendButton(userData:Map<String, Object>, recyclerView: RecyclerView){
         val sendButton: ImageView = findViewById(R.id.chat_MessageBar_SendButton)
         sendButton.setOnClickListener {
             val emailEditText: TextInputEditText = findViewById(R.id.chat_MessageBar_TextInputEditText)
