@@ -60,7 +60,8 @@ class Helper: AppCompatActivity() {
 
     fun playVoiceMessage(voicePath:String){
         val storage = Firebase.storage
-        val gsReference = storage.getReferenceFromUrl("$firebasePath/$voicePath")
+        Log.d(TAG, "Attempting to play voice message $voicePath")
+        val gsReference = storage.getReferenceFromUrl(voicePath)
         gsReference.downloadUrl.addOnSuccessListener { uri ->
             MediaPlayer().apply {
                 setDataSource(uri.toString())

@@ -21,7 +21,7 @@
             android:layout_height="40dp"
             android:scaleType="fitCenter"
             style="@style/imagebutton"
-            android:src="@drawable/close_thick" />
+            app:srcCompat="@drawable/close_thick" />
 
         <ImageView
             android:layout_width="wrap_content"
