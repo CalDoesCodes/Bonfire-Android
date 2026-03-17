@@ -7,6 +7,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.MediaPlayer
+import android.media.MediaRecorder
 import android.os.Build
 import android.util.Log
 import android.widget.ImageView
@@ -53,6 +55,19 @@ class Helper: AppCompatActivity() {
         } catch (e : IllegalArgumentException){
             imageView.setImageResource(R.drawable.default_pfp)
             Log.e(TAG, "Profile picture $avatarPath invalid: $e")
+        }
+    }
+
+    fun playVoiceMessage(voicePath:String){
+        val storage = Firebase.storage
+        Log.d(TAG, "Attempting to play voice message $voicePath")
+        val gsReference = storage.getReferenceFromUrl(voicePath)
+        gsReference.downloadUrl.addOnSuccessListener { uri ->
+            MediaPlayer().apply {
+                setDataSource(uri.toString())
+                prepare()
+                start()
+            }
         }
     }
 

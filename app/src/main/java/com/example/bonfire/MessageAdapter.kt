@@ -1,12 +1,13 @@
 package com.example.bonfire
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.core.view.isInvisible
+import androidx.cardview.widget.CardView
+import androidx.core.view.isGone
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
@@ -25,6 +26,8 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
         val timestampTextView: TextView = view.findViewById(R.id.message_timestamp)
         val checkReadImageView: ImageView = view.findViewById(R.id.check_read)
         val messageImageView: ImageView = view.findViewById(R.id.message_image)
+        val voiceMessageCard: CardView = view.findViewById(R.id.voiceMessageCard)
+        val voiceMessageImageButton: ImageButton = view.findViewById(R.id.voiceMessageImageButton)
     }
 
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
@@ -50,10 +53,18 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
 
         // photoURL is avatar url, imageUrl is the attached image
         // If no attached image in message, hide imageView
+        if (message["text"] == null || message["text"] == ""){
+            holder.textTextView.isGone = true;
+        }
         if (message["imageUrl"] == null){
-            holder.messageImageView.isInvisible = true;
-            holder.messageImageView.layoutParams.height = 1;
-            holder.messageImageView.layoutParams.width = 1;
+            holder.messageImageView.isGone = true;
+        }
+        if (message["voiceURL"] == null){
+            holder.voiceMessageCard.isGone = true;
+        } else{
+            holder.voiceMessageImageButton.setOnClickListener {
+                helper.playVoiceMessage(message["voiceURL"] as String)
+            }
         }
 
         // Only display read marks in DMs

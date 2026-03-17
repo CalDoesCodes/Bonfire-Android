@@ -8,4 +8,8 @@
         android:id="@+id/action_emoji"
         android:title="Send emoji"
         android:icon="@drawable/sticker_emoji"/>
+    <item
+        android:id="@+id/action_record"
+        android:title="Record voice message"
+        android:icon="@drawable/microphone"/>
 </menu>
