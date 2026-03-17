@@ -25,7 +25,7 @@ import androidx.core.content.edit
 
 
 class GroupChatListActivity : AppCompatActivity() {
-    val TAG = "chat list"
+    private val tag = "chat list"
     val uid = FirebaseAuth.getInstance().currentUser?.uid
     val db = Firebase.firestore
     val helper = Helper()
@@ -41,15 +41,15 @@ class GroupChatListActivity : AppCompatActivity() {
         setContentView(R.layout.groupchat_list_layout)
 
         if (!uid.isNullOrEmpty()) {
-            var userData : Map<String, Object>
-            val userRef = db.collection("users").document(uid ?: "")
+            val userRef = db.collection("users").document(uid!!)
             userRef.get()
             .addOnSuccessListener { document ->
-                if (document != null) {
-                    userData = document.data as Map<String, Object>
-                    val userFriends = userData["friends"]
-                    Log.d(TAG, "user friend list found")
-                    if (userFriends != null){
+                if (document != null && document.exists()) {
+                    val userData = document.data
+                    val userFriends = userData?.get("friends") as? List<*>
+                    Log.d(tag, "user friend list found")
+                    if (!userFriends.isNullOrEmpty()){
+                        @Suppress("UNCHECKED_CAST")
                         populateFriendList(db, userFriends as List<String>)
                     } else{
                         // Add text if user has no friends
@@ -63,15 +63,20 @@ class GroupChatListActivity : AppCompatActivity() {
 
                         // delete loading icon
                         val loading : TextView = findViewById(R.id.groupchat_list_loading)
-                        (loading.parent as ViewManager).removeView(loading)
+                        (loading.parent as? ViewManager)?.removeView(loading)
                     }
-                    Log.d(TAG, "${userFriends.toString()} user friend list found")
+                    Log.d(tag, "${userFriends.toString()} user friend list found")
                 } else {
-                    Log.d(TAG, "No such document")
+                    Log.d(tag, "No such document")
+                    // If document doesn't exist, we should still remove loading
+                    val loading : TextView = findViewById(R.id.groupchat_list_loading)
+                    (loading.parent as? ViewManager)?.removeView(loading)
                 }
             }
             .addOnFailureListener { exception ->
-                Log.d(TAG, "get failed with ", exception)
+                Log.d(tag, "get failed with ", exception)
+                val loading : TextView = findViewById(R.id.groupchat_list_loading)
+                (loading.parent as? ViewManager)?.removeView(loading)
             }
         } else {
              // Handle guest or unauthenticated mode for tests/etc
@@ -102,35 +107,28 @@ class GroupChatListActivity : AppCompatActivity() {
             // Skip if blocked
             if (blockedPref.getBoolean(friendId, false)) continue
 
-            Log.d(TAG, "friendId $friendId")
+            Log.d(tag, "friendId $friendId")
 
             // Find data of friend
             val docRef = db.collection("users").document(friendId)
             docRef.get()
             .addOnSuccessListener { document ->
-                if (document != null) {
-                    val friendData = document.data
+                if (document != null && document.exists()) {
+                    val friendData = document.data ?: return@addOnSuccessListener
                     // Friend data found
                     // dynamically generate friend view in list
-                    val friendView = LayoutInflater.from(this).inflate(R.layout.groupchat_layout, null, false)
+                    val friendView = LayoutInflater.from(this).inflate(R.layout.groupchat_layout, groupChatList, false)
 
                     val friendName : TextView = friendView.findViewById(R.id.text_chat_list_user)
-                    friendName.text = (friendData?.get("name") ?: "") as String
+                    friendName.text = (friendData["name"] ?: "Anonymous").toString()
 
                     val friendAvatarView : ShapeableImageView = friendView.findViewById(R.id.text_chat_list_avatar)
-                    val avatar = (friendData?.get("avatar") ?: "") as String
+                    val avatar = (friendData["avatar"] ?: "").toString()
                     helper.setProfilePicture(this, avatar, friendAvatarView)
 
 
                     // Generate button listener that will open chat with friend
-                    val openChatButton = friendView.findViewById<CardView>(R.id.card_chat_list_message)
-                    openChatButton.setOnClickListener {
-                        val intent = Intent(this, ChatActivity::class.java)
-
-                        // Passes friendID to chat activity
-                        intent.putExtra("id", friendId)
-                        ContextCompat.startActivity(this, intent, null)
-                    }
+                    val openChatButton = generateOpenChatButton(friendView, friendId)
 
                     // button listener to show dropdown menu for options
                     val optionsButton: ImageButton = friendView.findViewById(R.id.text_chat_list_message_options)
@@ -204,19 +202,33 @@ class GroupChatListActivity : AppCompatActivity() {
 
                      displayUnreadBubble(friendView, friendId, friendData)
 
+                    //Add the friendView to the groupChatList parent Linear Layout
                     groupChatList.addView(friendView)
                 } else {
-                    Log.d(TAG, "No such document")
+                    Log.d(tag, "No such document")
                 }
             }
             .addOnFailureListener { exception ->
-                Log.d(TAG, "get failed with ", exception)
+                Log.d(tag, "get failed with ", exception)
             }
         }
         // delete loading icon
         val loading : TextView = findViewById(R.id.groupchat_list_loading)
         (loading.parent as? ViewManager)?.removeView(loading)
     }
+
+    private fun generateOpenChatButton(friendView: View, friendId: String) : CardView {
+        val button = friendView.findViewById<CardView>(R.id.card_chat_list_message)
+        button.setOnClickListener {
+            val intent = Intent(this, ChatActivity::class.java)
+
+            // Passes friendID to chat activity
+            intent.putExtra("id", friendId)
+            ContextCompat.startActivity(this, intent, null)
+        }
+        return button
+    }
+
 
     fun displayUnreadBubble(friendView: View, friendId:String, friendData:Map<String, Any>?){
         // Keep or remove unread bubble based on if last message in chat is unread (and isn't from you)
@@ -227,9 +239,9 @@ class GroupChatListActivity : AppCompatActivity() {
         .get()
         .addOnSuccessListener { chatDocs ->
             for (chatDoc in chatDocs){
-                if (chatDoc != null) {
+                if (chatDoc != null && chatDoc.exists()) {
                     val chatData = chatDoc.data
-                    Log.d(TAG, "read:${chatData["read"] ?: ""}. newest message found in chat with ${friendData?.get("name") ?: "" }, '${chatDoc.data["text"] ?: ""}'" )
+                    Log.d(tag, "read:${chatData["read"] ?: ""}. newest message found in chat with ${friendData?.get("name") ?: "" }, '${chatDoc.data["text"] ?: ""}'" )
                     // If it's an old message without the "read" field, it will be assumed to be read
                     if (chatData["read"] == false       // If not read
                     && chatData["senderId"] != uid) {   // If you sent the last message, you've obviously read all the recent messages

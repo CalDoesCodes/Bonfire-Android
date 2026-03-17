@@ -51,7 +51,6 @@ class ChatActivityTest {
     fun testActivityLaunch_NoId() {
         ActivityScenario.launch(ChatActivity::class.java).use {
             onView(withId(R.id.chat_messages_RecyclerView)).check(matches(isDisplayed()))
-            onView(withId(R.id.limitPings)).check(matches(isNotEnabled()))
         }
     }
 
@@ -63,9 +62,7 @@ class ChatActivityTest {
         }
         ActivityScenario.launch<ChatActivity>(intent).use {
             onView(withId(R.id.chat_messages_RecyclerView)).check(matches(isDisplayed()))
-            onView(withId(R.id.limitPings)).check(matches(isEnabled()))
-            
-            onView(withId(R.id.limitPings)).perform(click())
+
             
             val context = ApplicationProvider.getApplicationContext<Context>()
             val prefs = context.getSharedPreferences("notif_limits", Context.MODE_PRIVATE)

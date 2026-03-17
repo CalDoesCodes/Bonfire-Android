@@ -12,7 +12,6 @@ import android.media.MediaRecorder
 import android.os.Build
 import android.util.Log
 import android.widget.ImageView
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -26,10 +25,9 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
 
-class Helper: AppCompatActivity() {
+class Helper {
     private val TAG = "Helper"
     private val channelId = "i.apps.notifications" // Unique channel ID for notifications
-    private val description = "Test notification"  // Description for the notification channel
     private val notificationId = 1234 // Unique identifier for the notification
     val firebasePath = "gs://bonfire-d8db1.firebasestorage.app"
 
@@ -38,6 +36,10 @@ class Helper: AppCompatActivity() {
      * Loads profile picture from firebase and updates the ImageView with that image.
      **/
     fun setProfilePicture(context: Context, avatarPath: String, imageView: ImageView){
+        if (avatarPath.isEmpty() || (!avatarPath.startsWith("gs://") && !avatarPath.startsWith("http"))) {
+            imageView.setImageResource(R.drawable.default_pfp)
+            return
+        }
         val storage = Firebase.storage
         try{
             val gsReference = storage.getReferenceFromUrl(avatarPath)
@@ -51,8 +53,9 @@ class Helper: AppCompatActivity() {
                 Glide.with(context).load(uri).placeholder(R.drawable.default_pfp).into(imageView)
             }.addOnFailureListener { e ->
                 Log.e(TAG, "Couldn't get avatar uri: $e")
+                imageView.setImageResource(R.drawable.default_pfp)
             }
-        } catch (e : IllegalArgumentException){
+        } catch (e : Exception){
             imageView.setImageResource(R.drawable.default_pfp)
             Log.e(TAG, "Profile picture $avatarPath invalid: $e")
         }
@@ -121,11 +124,15 @@ class Helper: AppCompatActivity() {
             .setPriority(NotificationCompat.PRIORITY_HIGH) // Notification priority for better visibility
 
         // Display the notification
-        with(NotificationManagerCompat.from(context)) {
-            notify(
-                notificationId,
-                builder.build()
-            )
+        try {
+            with(NotificationManagerCompat.from(context)) {
+                notify(
+                    notificationId,
+                    builder.build()
+                )
+            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Missing notification permission", e)
         }
     }
 
@@ -184,7 +191,7 @@ class Helper: AppCompatActivity() {
     }
 
     private fun notifPrefs(context: Context) =
-        context.getSharedPreferences("notif_limits", MODE_PRIVATE)
+        context.getSharedPreferences("notif_limits", Context.MODE_PRIVATE)
 
     private fun unopenedKey(friendId: String) = "unopened_$friendId"
     private fun limitEnabledKey(friendId: String) = "limit_enabled_$friendId"
@@ -227,7 +234,7 @@ class Helper: AppCompatActivity() {
                     val messageTimestamp = dc.document.data["timestamp"] as? Timestamp ?: continue
 
                     // get (or create if it does not exist) app preferences (where bools of whether a friend has been muted is saved)
-                    val sharedPref = context.getSharedPreferences("muted", MODE_PRIVATE)
+                    val sharedPref = context.getSharedPreferences("muted", Context.MODE_PRIVATE)
                     val friendNotMuted : Boolean = sharedPref.getInt(dc.document.data["senderId"].toString(), 0) == 0
 
                     Log.d(TAG, "Received notification from '${friend["name"]}. Friend muted? ${!friendNotMuted}'")
