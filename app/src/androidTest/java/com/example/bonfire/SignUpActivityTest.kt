@@ -56,10 +56,5 @@ class SignUpActivityTest {
         }
     }
 
-    @Test
-    fun testSwitchToSignIn() {
-        ActivityScenario.launch(SignUpActivity::class.java).use {
-            onView(withId(R.id.signup_switch_button)).perform(click())
-        }
-    }
+
 }

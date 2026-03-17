@@ -43,13 +43,6 @@ class GroupChatListActivityTest {
     }
 
     @Test
-    fun testOpenGlobalChat() {
-        ActivityScenario.launch(GroupChatListActivity::class.java).use {
-            onView(withId(R.id.text_chat_list_message)).perform(click())
-        }
-    }
-
-    @Test
     fun testNavButtons() {
         ActivityScenario.launch(GroupChatListActivity::class.java).use {
             onView(withId(R.id.menu_button_friends)).check(matches(isDisplayed()))

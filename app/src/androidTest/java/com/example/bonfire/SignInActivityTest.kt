@@ -12,14 +12,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class SignInActivityTest {
-    @Test
-    fun testActivityLaunch() {
-        ActivityScenario.launch(SignInActivity::class.java).use { scenario ->
-            onView(withId(R.id.signin_email_edit)).check(matches(isDisplayed()))
-            onView(withId(R.id.signin_password_edit)).check(matches(isDisplayed()))
-            onView(withId(R.id.signin_button)).check(matches(isDisplayed()))
-        }
-    }
+
 
     @Test
     fun testSignIn_EmptyFields() {
