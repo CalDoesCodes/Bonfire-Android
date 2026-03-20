@@ -42,7 +42,7 @@ class FriendAddActivity : AppCompatActivity() {
         helper.listenForNotifs(uid ?: "", this)
 
         populateFriendRequestList()
-        defineBottomNavButtons()
+        helper.defineBottomNavButtons(this)
     }
 
     fun populateFriendRequestList(){
@@ -141,32 +141,6 @@ class FriendAddActivity : AppCompatActivity() {
             .delete()
             .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully deleted!") }
             .addOnFailureListener { e -> Log.w(TAG, "Error deleting document", e) }
-    }
-
-    private fun defineBottomNavButtons() {
-        // go to chat screen
-        val chatButton: ImageButton = findViewById(R.id.menu_button_chat)
-        chatButton.setOnClickListener {
-            val intent = Intent(this, GroupChatListActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
-
-        // go to accounts screen
-        val accountButton: ImageButton = findViewById(R.id.menu_button_account)
-        accountButton.setOnClickListener {
-            val intent = Intent(this, AccountActivity::class.java)
-            startActivity(intent)
-        }
-
-        // log out
-        val logoutButton: ImageButton = findViewById(R.id.menu_button_logout)
-        logoutButton.setOnClickListener {
-            FirebaseAuth.getInstance().signOut()
-            val intent = Intent(this, WelcomeActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
     }
 
     fun sendFriendRequest(friendName:String){

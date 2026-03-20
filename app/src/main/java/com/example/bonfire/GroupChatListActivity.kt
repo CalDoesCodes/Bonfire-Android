@@ -22,6 +22,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
 import androidx.core.content.edit
+import com.example.bonfire.Helper
 
 
 class GroupChatListActivity : AppCompatActivity() {
@@ -94,11 +95,11 @@ class GroupChatListActivity : AppCompatActivity() {
         }
 
         helper.listenForNotifs(uid ?: "", this)
+        helper.defineBottomNavButtons(this)
 
-        defineBottomNavButtons()
     }
 
-    // Generate list of friends, with a button that will open the specific private message message with them
+    // Generate list of friends, with a button that will open the specific private message with them
     private fun populateFriendList(db: FirebaseFirestore, userFriends:List<String>) {
         val groupChatList : LinearLayout = findViewById(R.id.list_messages_LinearLayout)
         val blockedPref = getSharedPreferences("blocked", MODE_PRIVATE)
@@ -261,30 +262,4 @@ class GroupChatListActivity : AppCompatActivity() {
         return "chats/$chatId/messages"
     }
 
-    private fun defineBottomNavButtons() {
-        // go to friends screen
-        val friendButton: ImageButton = findViewById(R.id.menu_button_friends)
-        friendButton.setOnClickListener {
-            val intent = Intent(this, FriendAddActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
-
-        // go to accounts screen
-        val accountButton: ImageButton = findViewById(R.id.menu_button_account)
-        accountButton.setOnClickListener {
-            val intent = Intent(this, AccountActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
-
-        // log out
-        val logoutButton: ImageButton = findViewById(R.id.menu_button_logout)
-        logoutButton.setOnClickListener {
-            FirebaseAuth.getInstance().signOut()
-            val intent = Intent(this, WelcomeActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
-    }
 }

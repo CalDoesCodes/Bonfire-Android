@@ -11,21 +11,26 @@ import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.os.Build
 import android.util.Log
+import android.widget.ImageButton
 import android.widget.ImageView
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat.startActivity
 import com.bumptech.glide.Glide
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
+import kotlin.jvm.java
 
-class Helper {
+public class Helper {
     private val TAG = "Helper"
     private val channelId = "i.apps.notifications" // Unique channel ID for notifications
     private val notificationId = 1234 // Unique identifier for the notification
@@ -280,4 +285,59 @@ class Helper {
             }
         }
     }
+
+    /**
+     * Sets navigation listeners for the bottom navigation button to quickly move to specific pages.
+     */
+    public fun defineBottomNavButtons(currentPage : AppCompatActivity) {
+        //if statements make sure not instantiating new page that is the current page
+        if (currentPage !is GroupChatListActivity) {
+            /**
+             * Sets navigation for the chat button in the bottom navigation.
+             */
+            val chatButton: ImageButton = currentPage.findViewById(R.id.menu_button_chat)
+            chatButton.setOnClickListener {
+                val intent = Intent(currentPage, GroupChatListActivity::class.java)
+                currentPage.startActivity(intent)
+                currentPage.finish()
+            }
+        }
+
+        if (currentPage !is FriendAddActivity){
+            /**
+             * Sets navigation for the friend button in the bottom navigation.
+             */
+            val friendButton: ImageButton = currentPage.findViewById(R.id.menu_button_friends)
+            friendButton.setOnClickListener {
+                val intent = Intent(currentPage, FriendAddActivity::class.java)
+                currentPage.startActivity(intent)
+                currentPage.finish()
+            }
+        }
+
+        if (currentPage !is AccountActivity) {
+            /**
+             * Sets navigation for the account button in the bottom navigation.
+             */
+            val accountButton: ImageButton = currentPage.findViewById(R.id.menu_button_account)
+            accountButton.setOnClickListener {
+                val intent = Intent(currentPage, AccountActivity::class.java)
+                currentPage.startActivity(intent)
+                currentPage.finish()
+            }
+        }
+
+        /**
+         * Sets navigation for the logout button in the bottom navigation.
+         */
+        val logoutButton: ImageButton = currentPage.findViewById(R.id.menu_button_logout)
+        logoutButton.setOnClickListener {
+            FirebaseAuth.getInstance().signOut()
+            val intent = Intent(currentPage, WelcomeActivity::class.java)
+            currentPage.startActivity(intent)
+            currentPage.finish()
+        }
+    }
+
+
 }
