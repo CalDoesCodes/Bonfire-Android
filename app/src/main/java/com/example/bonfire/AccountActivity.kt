@@ -152,7 +152,7 @@ class AccountActivity : AppCompatActivity() {
         helper.listenForNotifs(uid ?: "", this)
 
         populateBlockedList()
-        defineBottomNavButtons()
+        helper.defineBottomNavButtons(this)
     }
 
     private fun populateBlockedList() {
@@ -207,29 +207,4 @@ class AccountActivity : AppCompatActivity() {
         }
     }
 
-
-    private fun defineBottomNavButtons() {
-        // go to chat screen
-        val chatButton: ImageButton = findViewById(R.id.menu_button_chat)
-        chatButton.setOnClickListener {
-            val intent = Intent(this, GroupChatListActivity::class.java)
-            startActivity(intent)
-        }
-
-        // go to friends screen
-        val friendButton: ImageButton = findViewById(R.id.menu_button_friends)
-        friendButton.setOnClickListener {
-            val intent = Intent(this, FriendAddActivity::class.java)
-            startActivity(intent)
-        }
-
-        // log out
-        val logoutButton: ImageButton = findViewById(R.id.menu_button_logout)
-        logoutButton.setOnClickListener {
-            FirebaseAuth.getInstance().signOut()
-            val intent = Intent(this, WelcomeActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
-    }
 }
