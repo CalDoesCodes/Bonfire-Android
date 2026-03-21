@@ -18,6 +18,7 @@ fragment = "1.8.9"
 materialVersion = "1.13.0"
 firebaseCommonKtx = "22.0.1"
 firebaseStorageKtx = "22.0.1"
+junitJupiter = "5.14.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,6 +45,7 @@ androidx-fragment = { group = "androidx.fragment", name = "fragment", version.re
 google-material = { group = "com.google.android.material", name = "material", version.ref = "materialVersion" }
 firebase-common-ktx = { group = "com.google.firebase", name = "firebase-common-ktx", version.ref = "firebaseCommonKtx" }
 firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage-ktx", version.ref = "firebaseStorageKtx" }
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junitJupiter" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

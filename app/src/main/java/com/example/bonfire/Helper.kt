@@ -288,6 +288,8 @@ public class Helper {
 
     /**
      * Sets navigation listeners for the bottom navigation button to quickly move to specific pages.
+     *
+     * @param currentPage context from which to make calls and insert functionality
      */
     public fun defineBottomNavButtons(currentPage : AppCompatActivity) {
         //if statements make sure not instantiating new page that is the current page
