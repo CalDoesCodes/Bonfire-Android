@@ -1,6 +1,7 @@
 package com.example.bonfire
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -35,8 +36,11 @@ class GroupChatListActivity : AppCompatActivity() {
     private fun unopenedKey(friendId: String) = "unopened_$friendId"
 
 
-
-
+    /**
+     * Does the setup for the main page (which is the list of chats for a user)
+     *
+     * @param savedInstanceState: Bundle for passing into super.onCreate(), can be null
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.groupchat_list_layout)
@@ -46,6 +50,14 @@ class GroupChatListActivity : AppCompatActivity() {
             userRef.get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
+                    //Remove groupchat_list_loading view
+                    val loading : TextView = findViewById(R.id.groupchat_list_loading)
+                    (loading.parent as? ViewManager)?.removeView(loading)
+
+                    // Open global chat button
+                    val globalChat = findViewById<View>(R.id.global_chat)
+                    generateOpenChatButton(globalChat.findViewById<CardView>(R.id.card_chat_list_message), null)
+
                     val userData = document.data
                     val userFriends = userData?.get("friends") as? List<*>
                     Log.d(tag, "user friend list found")
@@ -61,48 +73,30 @@ class GroupChatListActivity : AppCompatActivity() {
                         noFriendText.textSize = 20.toFloat()
                         noFriendText.textAlignment = View.TEXT_ALIGNMENT_CENTER
                         groupChatList.addView(noFriendText)
-
-                        // delete loading icon
-                        val loading : TextView = findViewById(R.id.groupchat_list_loading)
-                        (loading.parent as? ViewManager)?.removeView(loading)
                     }
                     Log.d(tag, "${userFriends.toString()} user friend list found")
                 } else {
                     Log.d(tag, "No such document")
-                    // If document doesn't exist, we should still remove loading
-                    val loading : TextView = findViewById(R.id.groupchat_list_loading)
-                    (loading.parent as? ViewManager)?.removeView(loading)
                 }
             }
             .addOnFailureListener { exception ->
                 Log.d(tag, "get failed with ", exception)
-                val loading : TextView = findViewById(R.id.groupchat_list_loading)
-                (loading.parent as? ViewManager)?.removeView(loading)
             }
-        } else {
-             // Handle guest or unauthenticated mode for tests/etc
-             val loading : TextView = findViewById(R.id.groupchat_list_loading)
-             (loading.parent as? ViewManager)?.removeView(loading)
         }
-
-        // Open global chat button
-        val globalChat = findViewById<View>(R.id.global_chat)
-        val openChatButton = globalChat.findViewById<CardView>(R.id.card_chat_list_message)
-        openChatButton.setOnClickListener {
-            val intent = Intent(this, ChatActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
-
         helper.listenForNotifs(uid ?: "", this)
         helper.defineBottomNavButtons(this)
 
     }
 
-    // Generate list of friends, with a button that will open the specific private message with them
+    /**
+     * Generate list of friends, with a button that will open the specific private message with them
+     *
+     * @param db: Firebase database to get backend information from
+     * @param userFriends: List of friend ids
+     */
     private fun populateFriendList(db: FirebaseFirestore, userFriends:List<String>) {
         val groupChatList : LinearLayout = findViewById(R.id.list_messages_LinearLayout)
-        val blockedPref = getSharedPreferences("blocked", MODE_PRIVATE)
+        val blockedPref : SharedPreferences = getSharedPreferences("blocked", MODE_PRIVATE)
 
         for (friendId in userFriends) {
             // Skip if blocked
@@ -129,79 +123,13 @@ class GroupChatListActivity : AppCompatActivity() {
 
 
                     // Generate button listener that will open chat with friend
-                    val openChatButton = generateOpenChatButton(friendView, friendId)
+                    generateOpenChatButton(friendView, friendId)
 
                     // button listener to show dropdown menu for options
                     val optionsButton: ImageButton = friendView.findViewById(R.id.text_chat_list_message_options)
-                    optionsButton.setOnClickListener { view ->
-                        val popup = PopupMenu(this, view)
-                        popup.menuInflater.inflate(R.menu.chat_options_menu, popup.menu)
+                    setUpOptionsButton(optionsButton, friendId, friendName.text, groupChatList,  blockedPref, friendView)
 
-                        // Update Mute menu item text based on current state
-                        val sharedPref = this.getSharedPreferences("muted", MODE_PRIVATE)
-                        val isFriendMuted : Int = sharedPref.getInt(friendId, 0)
-                        val muteItem = popup.menu.findItem(R.id.action_mute)
-                        muteItem.title = if (isFriendMuted == 1) "Unmute" else "Mute"
-
-                        // same for if limited notifications
-                        val isFriendLimited = notifPrefs().getBoolean(limitEnabledKey(friendId), false)
-                        val limitItem = popup.menu.findItem(R.id.action_limit)
-                        limitItem.title = if (isFriendLimited) "Unlimit notifications" else "Limit notifications"
-
-                        popup.setOnMenuItemClickListener { item ->
-                            when (item.itemId) {
-                                R.id.action_mute -> {
-                                    // toggle if friend is muted, 0 <-> 1 / false <-> true
-                                    val newMuteStatus = if (isFriendMuted == 1) 0 else 1
-                                    sharedPref.edit {
-                                        putInt(friendId, newMuteStatus)
-                                    }
-
-                                    if (newMuteStatus == 0) {
-                                        Toast.makeText(baseContext, "${friendName.text} has been unmuted.", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        Toast.makeText(baseContext, "${friendName.text} has been muted.", Toast.LENGTH_SHORT).show()
-                                    }
-                                    true
-                                }
-                                R.id.action_block -> {
-                                    blockedPref.edit {
-                                        putBoolean(friendId, true)
-                                        putString("name_$friendId", friendName.text.toString())
-                                    }
-                                    // Also mute the user when blocking
-                                    sharedPref.edit {
-                                        putInt(friendId, 1)
-                                    }
-                                    groupChatList.removeView(friendView)
-                                    Toast.makeText(baseContext, "Blocked ${friendName.text}", Toast.LENGTH_SHORT).show()
-                                    true
-                                }
-                                R.id.action_limit -> {
-                                    // Save changes when user toggles
-                                    notifPrefs().edit{
-                                        putBoolean(limitEnabledKey(friendId), !isFriendLimited)
-                                    }
-
-                                    if (isFriendLimited) {
-                                        Toast.makeText(baseContext, "Notifications unlimited from ${friendName.text}", Toast.LENGTH_SHORT).show()
-                                        // Optional (recommended): if user enables limiting, reset the counter so they don’t get “stuck”
-                                        notifPrefs().edit {
-                                            putInt(unopenedKey(friendId), 0)
-                                        }
-                                    } else{
-                                        Toast.makeText(baseContext, "Notifications limited from ${friendName.text}", Toast.LENGTH_SHORT).show()
-                                    }
-
-                                    true
-                                }
-                                else -> false
-                            }
-                        }
-                        popup.show()
-                    }
-
-                     displayUnreadBubble(friendView, friendId, friendData)
+                    displayUnreadBubble(friendView, friendId, friendData)
 
                     //Add the friendView to the groupChatList parent Linear Layout
                     groupChatList.addView(friendView)
@@ -213,24 +141,119 @@ class GroupChatListActivity : AppCompatActivity() {
                 Log.d(tag, "get failed with ", exception)
             }
         }
-        // delete loading icon
-        val loading : TextView = findViewById(R.id.groupchat_list_loading)
-        (loading.parent as? ViewManager)?.removeView(loading)
     }
 
-    private fun generateOpenChatButton(friendView: View, friendId: String) : CardView {
+    /**
+     * Sets up the options button (three vertical dots) for a friend for chatting
+     *
+     * @param optionsButton the button that is getting functionality setup
+     * @param friendId the Id String for the friend related to the chat in question
+     * @param friendName name of the friend
+     * @param groupChatList Layout this button is being added to
+     * @param blockedPref current preference for blocking of the given friend
+     * @param friendView view that will be removed from the page if user chooses to block
+     */
+    private fun setUpOptionsButton(optionsButton: ImageButton, friendId: String, friendName: CharSequence,
+                                   groupChatList : LinearLayout, blockedPref : SharedPreferences, friendView: View){
+
+        optionsButton.setOnClickListener { view ->
+            val popup = PopupMenu(this, view)
+            popup.menuInflater.inflate(R.menu.chat_options_menu, popup.menu)
+
+            // Update Mute menu item text based on current state
+            val sharedPref = this.getSharedPreferences("muted", MODE_PRIVATE)
+            val isFriendMuted : Int = sharedPref.getInt(friendId, 0)
+            val muteItem = popup.menu.findItem(R.id.action_mute)
+            muteItem.title = if (isFriendMuted == 1) "Unmute" else "Mute"
+
+            // same for if limited notifications
+            val isFriendLimited = notifPrefs().getBoolean(limitEnabledKey(friendId), false)
+            val limitItem = popup.menu.findItem(R.id.action_limit)
+            limitItem.title = if (isFriendLimited) "Unlimit notifications" else "Limit notifications"
+
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.action_mute -> {
+                        // toggle if friend is muted, 0 <-> 1 / false <-> true
+                        val newMuteStatus = if (isFriendMuted == 1) 0 else 1
+                        sharedPref.edit {
+                            putInt(friendId, newMuteStatus)
+                        }
+
+                        if (newMuteStatus == 0) {
+                            Toast.makeText(baseContext, "${friendName} has been unmuted.", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(baseContext, "${friendName} has been muted.", Toast.LENGTH_SHORT).show()
+                        }
+                        true
+                    }
+                    R.id.action_block -> {
+                        blockedPref.edit {
+                            putBoolean(friendId, true)
+                            putString("name_$friendId", friendName.toString())
+                        }
+                        // Also mute the user when blocking
+                        sharedPref.edit {
+                            putInt(friendId, 1)
+                        }
+                        groupChatList.removeView(friendView)
+                        Toast.makeText(baseContext, "Blocked ${friendName}", Toast.LENGTH_SHORT).show()
+                        true
+                    }
+                    R.id.action_limit -> {
+                        // Save changes when user toggles
+                        notifPrefs().edit{
+                            putBoolean(limitEnabledKey(friendId), !isFriendLimited)
+                        }
+
+                        if (isFriendLimited) {
+                            Toast.makeText(baseContext, "Notifications unlimited from ${friendName}", Toast.LENGTH_SHORT).show()
+                            // Optional (recommended): if user enables limiting, reset the counter so they don’t get “stuck”
+                            notifPrefs().edit {
+                                putInt(unopenedKey(friendId), 0)
+                            }
+                        } else{
+                            Toast.makeText(baseContext, "Notifications limited from ${friendName}", Toast.LENGTH_SHORT).show()
+                        }
+
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popup.show()
+        }
+    }
+
+    /**
+     * Sets up the button to open a specific chat
+     *
+     * @param friendView view that the button is targeting
+     * @param friendId Id of friend to find the chat to open
+     */
+    private fun generateOpenChatButton(friendView: View, friendId: String?) : CardView {
         val button = friendView.findViewById<CardView>(R.id.card_chat_list_message)
         button.setOnClickListener {
             val intent = Intent(this, ChatActivity::class.java)
 
             // Passes friendID to chat activity
-            intent.putExtra("id", friendId)
+            if (friendId != null) {
+                intent.putExtra("id", friendId)
+            }
             ContextCompat.startActivity(this, intent, null)
+            finish()
         }
         return button
     }
 
 
+    /**
+     * Displays a red dot next to chats from users who've sent messages
+     *
+     * @param friendView view that will get the red dot
+     * @param friendId friend's id for assignment checking
+     * @param friendData all data from friend
+     */
     fun displayUnreadBubble(friendView: View, friendId:String, friendData:Map<String, Any>?){
         // Keep or remove unread bubble based on if last message in chat is unread (and isn't from you)
         // filter for first message of dm
@@ -255,6 +278,11 @@ class GroupChatListActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Gets the chatId given a friend's id string
+     *
+     * @param friendId Identifier string for a given friend
+     */
     fun getChatIdWithFriend(friendId:String) : String{
         val chatIdArray = arrayOf(uid ?: "me", friendId)
         chatIdArray.sort()
