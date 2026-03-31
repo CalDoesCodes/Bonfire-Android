@@ -220,7 +220,9 @@ class ChatActivity : AppCompatActivity() {
         val messageData = hashMapOf(
             "displayName" to userData["name"],
             "photoURL" to userData["avatar"],
-            "voiceURL" to path,
+            "audioUrl" to path,
+            "audioType" to "audio/webm",
+            "audioName" to "voice-message.webm",
             "read" to false,
             "senderId" to uid,
             "text" to "",

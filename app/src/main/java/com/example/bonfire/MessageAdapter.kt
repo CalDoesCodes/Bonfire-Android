@@ -1,5 +1,7 @@
 package com.example.bonfire
 
+import android.media.MediaPlayer
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,13 +11,19 @@ import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.core.view.isGone
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
+import com.google.firebase.storage.storage
 import java.text.SimpleDateFormat
 import java.util.Date
 
+
 // RecyclerView adapter for the scrollable messages view
 class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPrivateChat: Boolean, val uid:String) : RecyclerView.Adapter<MessageAdapter.ItemViewHolder>() {
+    private var currentPlayingPosition = -1
+    private var isPaused = false
     val helper = Helper()
+    private val TAG = "Message Adapter"
     var mRecyclerView: RecyclerView? = null
 
     // Akin to onCreate method to initialize each instance (each message)
@@ -28,6 +36,7 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
         val messageImageView: ImageView = view.findViewById(R.id.message_image)
         val voiceMessageCard: CardView = view.findViewById(R.id.voiceMessageCard)
         val voiceMessageImageButton: ImageButton = view.findViewById(R.id.voiceMessageImageButton)
+        val mediaPlayer = MediaPlayer()
     }
 
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
@@ -51,19 +60,25 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
         helper.setProfilePicture(mRecyclerView!!.context, (message["imageUrl"] ?: "") as String, holder.messageImageView)
         helper.setProfilePicture(mRecyclerView!!.context, (message["photoURL"] ?: "") as String, holder.avatarURLTextView)
 
-        // photoURL is avatar url, imageUrl is the attached image
+        // If no attached text in message, hide text
+        holder.textTextView.isGone = message["text"] == null || message["text"] == ""
+
         // If no attached image in message, hide imageView
-        if (message["text"] == null || message["text"] == ""){
-            holder.textTextView.isGone = true;
-        }
-        if (message["imageUrl"] == null){
-            holder.messageImageView.isGone = true;
-        }
-        if (message["voiceURL"] == null){
-            holder.voiceMessageCard.isGone = true;
-        } else{
+        holder.messageImageView.isGone = message["imageUrl"] == null
+
+        // If voice message in message is null, hide imageView
+        holder.voiceMessageCard.isGone = message["audioUrl"] == null
+
+        // else initialize voice message
+        if (message["audioUrl"] != null){
+            holder.voiceMessageCard.isGone = false
+
             holder.voiceMessageImageButton.setOnClickListener {
-                helper.playVoiceMessage(message["voiceURL"] as String)
+                val voicePath = message["audioUrl"] as String
+                handleVoicePlayback(holder, position, voicePath)
+            }
+            holder.mediaPlayer.setOnCompletionListener {
+                holder.voiceMessageImageButton.setImageResource(R.drawable.microphone)
             }
         }
 
@@ -77,6 +92,54 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
         }
     }
 
+    private fun handleVoicePlayback(holder: ItemViewHolder, position: Int, voiceUrl: String) {
+        val mediaPlayer = holder.mediaPlayer
+
+        // User clicked the message that is already active
+        if (currentPlayingPosition == position) {
+            if (mediaPlayer.isPlaying) {
+                // It was playing -> Pause it
+                mediaPlayer.pause()
+                isPaused = true
+                holder.voiceMessageImageButton.setImageResource(R.drawable.play)
+            } else if (isPaused) {
+                // It was paused -> Resume it
+                mediaPlayer.start()
+                isPaused = false
+                holder.voiceMessageImageButton.setImageResource(R.drawable.pause)
+            }
+        }
+        // User clicked a new message (or first time playing)
+        else {
+            prepareAndPlay(holder, position, voiceUrl)
+        }
+    }
+
+    private fun prepareAndPlay(holder: ItemViewHolder, position: Int, voiceUrl: String) {
+        val storage = Firebase.storage
+        val gsReference = storage.getReferenceFromUrl(voiceUrl)
+
+        gsReference.downloadUrl.addOnSuccessListener { uri ->
+            holder.mediaPlayer.apply {
+                reset()
+                setDataSource(uri.toString())
+                prepareAsync()
+
+                setOnPreparedListener {
+                    start()
+                    currentPlayingPosition = position
+                    isPaused = false
+                    holder.voiceMessageImageButton.setImageResource(R.drawable.pause)
+                }
+
+                setOnCompletionListener {
+                    holder.voiceMessageImageButton.setImageResource(R.drawable.play)
+                    currentPlayingPosition = -1
+                    isPaused = false
+                }
+            }
+        }
+    }
 
     fun formatTimestampToString(timestamp: Timestamp): String{
         val timestampDate:Date = timestamp.toDate()

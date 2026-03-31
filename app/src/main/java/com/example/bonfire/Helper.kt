@@ -58,19 +58,6 @@ class Helper: AppCompatActivity() {
         }
     }
 
-    fun playVoiceMessage(voicePath:String){
-        val storage = Firebase.storage
-        Log.d(TAG, "Attempting to play voice message $voicePath")
-        val gsReference = storage.getReferenceFromUrl(voicePath)
-        gsReference.downloadUrl.addOnSuccessListener { uri ->
-            MediaPlayer().apply {
-                setDataSource(uri.toString())
-                prepare()
-                start()
-            }
-        }
-    }
-
     fun attemptNotification(title:String, contextText:String, context:Context, friendId:String){
         // Request runtime permission for notifications on Android 13 and higher
         val activity = context as? Activity
