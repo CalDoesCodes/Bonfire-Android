@@ -23,12 +23,11 @@ import com.bumptech.glide.Glide
 import com.google.firebase.storage.storage
 import androidx.core.content.edit
 import com.google.android.material.textfield.TextInputEditText
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.SetOptions
 
 
 class AccountActivity : AppCompatActivity() {
-    private var tag: String = "account_activity"
+    private var TAG: String = "account_activity"
     private val helper = Helper()
     private val channelId = "i.apps.notifications" // Unique channel ID for notifications
     private val description = "Message notification"  // Description for the notification channel
@@ -67,7 +66,7 @@ class AccountActivity : AppCompatActivity() {
             docRef.get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
-                    Log.d(tag, "DocumentSnapshot data: ${document.data}")
+                    Log.d(TAG, "DocumentSnapshot data: ${document.data}")
                     val data = document.data
 
                     // Update views to display accurate user info on screen
@@ -98,17 +97,21 @@ class AccountActivity : AppCompatActivity() {
                         docRef.set(updatedUserData, SetOptions.merge())
                     }
 
+                    addDarkLightModButtonListeners(
+                        (data?.get("stylePreference") ?: "dark") as String,
+                        (data?.get("usingSystemPreference") ?: false) as Boolean
+                    )
 
                     // Create a reference to a file from a Google Cloud Storage URI
                     val avatarPath = (data?.get("avatar") ?: "") as String
 
                     helper.setProfilePicture(this, avatarPath, accountAvatarImageView)
                 } else {
-                    Log.d(tag, "No such document")
+                    Log.d(TAG, "No such document")
                 }
             }
             .addOnFailureListener { exception ->
-                Log.d(tag, "get failed with ", exception)
+                Log.d(TAG, "get failed with ", exception)
             }
         }
 
@@ -137,13 +140,13 @@ class AccountActivity : AppCompatActivity() {
                         // change field in db
                         userRef
                             .update("avatar", uri.toString())
-                            .addOnSuccessListener { Log.d(tag, "DocumentSnapshot successfully updated!") }
-                            .addOnFailureListener { e -> Log.w(tag, "Error updating document", e) }
+                            .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully updated!") }
+                            .addOnFailureListener { e -> Log.w(TAG, "Error updating document", e) }
                     }.addOnFailureListener { e ->
-                        Log.e(tag, "Couldn't get avatar uri: $e")
+                        Log.e(TAG, "Couldn't get avatar uri: $e")
                     }
                 } catch (e: Exception) {
-                    Log.e(tag, "Error with avatar URI: $e")
+                    Log.e(TAG, "Error with avatar URI: $e")
                 }
             }
         }
@@ -153,6 +156,22 @@ class AccountActivity : AppCompatActivity() {
 
         populateBlockedList()
         defineBottomNavButtons()
+    }
+
+    private fun addDarkLightModButtonListeners(stylePreference:String, usingSystemPreference: Boolean) {
+        val db = Firebase.firestore
+        val darkButton = findViewById<Button>(R.id.mode_btn_dark).apply{
+            setOnClickListener {
+                val washingtonRef = db.collection("cities").document("DC")
+                washingtonRef
+                    .update("capital", true)
+                    .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully updated!") }
+                    .addOnFailureListener { e -> Log.w(TAG, "Error updating document", e) }
+            }
+        }
+        val lightButton: Button = findViewById(R.id.mode_btn_light)
+        val systemButton: Button = findViewById(R.id.mode_btn_system)
+
     }
 
     private fun populateBlockedList() {
