@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.net.Uri
+import android.os.Build
 import android.widget.Button
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -53,7 +54,7 @@ internal class VoiceRecorder {
         dialog.setView(dialogView)
         dialog.show()
 
-        audioPath = "${context.cacheDir}/voice_message.3gp"
+        audioPath = "${context.cacheDir}/voice_message.webm"
 
         val recordBtn = dialogView.findViewById<Button>(R.id.recordBtn)
         val messageLength = dialogView.findViewById<TextView>(R.id.messageLength)
@@ -104,9 +105,11 @@ internal class VoiceRecorder {
         startTime = System.currentTimeMillis()
         recorder = MediaRecorder().apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
-            setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+            setOutputFormat(MediaRecorder.OutputFormat.WEBM)
             setOutputFile(audioPath)
-            setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                setAudioEncoder(MediaRecorder.AudioEncoder.OPUS)
+            }
 
             prepare()
             start()
@@ -125,22 +128,30 @@ internal class VoiceRecorder {
     }
 
     private fun playRecording(playBtn: Button) {
+        // If player exists and is paused, just resume
+        if (player != null && !isPlaying) {
+            player?.start()
+            isPlaying = true
+            return
+        }
+
+        // Otherwise, create new player
         player = MediaPlayer().apply {
             setDataSource(audioPath)
             prepare()
             start()
-        }
-        player?.setOnCompletionListener {
-            isPlaying = false
-            playBtn.text = "Play"
+            setOnCompletionListener {
+                playBtn.text = "Play"
+                release()
+                player = null
+            }
         }
     }
 
-    private fun pauseRecording(){
-        player = MediaPlayer().apply {
-            setDataSource(audioPath)
-            prepare()
-            stop()
+    private fun pauseRecording() {
+        if (player?.isPlaying == true) {
+            player?.pause()
+            isPlaying = false
         }
     }
 
