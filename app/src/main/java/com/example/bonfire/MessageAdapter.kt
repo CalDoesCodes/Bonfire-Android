@@ -1,5 +1,6 @@
 package com.example.bonfire
 
+import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.util.Log
 import android.view.LayoutInflater
@@ -35,6 +36,7 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
         val checkReadImageView: ImageView = view.findViewById(R.id.check_read)
         val messageImageView: ImageView = view.findViewById(R.id.message_image)
         val voiceMessageCard: CardView = view.findViewById(R.id.voiceMessageCard)
+        val voiceMessageLength: TextView = view.findViewById(R.id.voiceMessageLength)
         val voiceMessageImageButton: ImageButton = view.findViewById(R.id.voiceMessageImageButton)
         val mediaPlayer = MediaPlayer()
     }
@@ -73,13 +75,14 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
         if (message["audioUrl"] != null){
             holder.voiceMessageCard.isGone = false
 
+            val voicePath = message["audioUrl"] as String
             holder.voiceMessageImageButton.setOnClickListener {
-                val voicePath = message["audioUrl"] as String
                 handleVoicePlayback(holder, position, voicePath)
             }
             holder.mediaPlayer.setOnCompletionListener {
                 holder.voiceMessageImageButton.setImageResource(R.drawable.microphone)
             }
+            holder.voiceMessageLength.text = getVoiceDuration(voicePath)
         }
 
         // Only display read marks in DMs
@@ -112,6 +115,25 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
         // User clicked a new message (or first time playing)
         else {
             prepareAndPlay(holder, position, voiceUrl)
+        }
+    }
+
+    fun getVoiceDuration(url: String): String {
+        val retriever = MediaMetadataRetriever()
+        return try {
+            // This works for both local files and HTTPS URLs
+            retriever.setDataSource(url, HashMap<String, String>())
+            val time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+            val timeInMillis = time?.toLong() ?: 0L
+
+            val minutes = (timeInMillis / 1000) / 60
+            val seconds = (timeInMillis / 1000) % 60
+
+            String.format("%d:%02d", minutes, seconds)
+        } catch (e: Exception) {
+            "0:00"
+        } finally {
+            retriever.release()
         }
     }
 

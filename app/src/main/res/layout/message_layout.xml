@@ -90,7 +90,7 @@
                     android:src="@drawable/play"
                     android:layout_gravity="start"/>
                 <TextView
-                    android:id="@+id/messageLength"
+                    android:id="@+id/voiceMessageLength"
                     android:layout_width="100dp"
                     android:layout_height="match_parent"
                     android:text="0:00"
