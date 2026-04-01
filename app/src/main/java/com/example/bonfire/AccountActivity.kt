@@ -14,6 +14,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
@@ -31,6 +32,7 @@ class AccountActivity : AppCompatActivity() {
     private val helper = Helper()
     private val channelId = "i.apps.notifications" // Unique channel ID for notifications
     private val description = "Message notification"  // Description for the notification channel
+    private var uuid = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,12 +60,13 @@ class AccountActivity : AppCompatActivity() {
 
         val displaynameEditText : TextInputEditText = findViewById(R.id.displayname_editText)
         val bioEditText : TextInputEditText = findViewById(R.id.bio_editText)
-        
+
+        uuid = user?.uid ?: ""
         val db = Firebase.firestore
         // get details of account
-        if (user?.uid != null) {
-            val docRef = db.collection("users").document(user.uid)
-            docRef.get()
+        if (uuid != "") {
+            val userRef = db.collection("users").document(uuid)
+            userRef.get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
                     Log.d(TAG, "DocumentSnapshot data: ${document.data}")
@@ -94,13 +97,10 @@ class AccountActivity : AppCompatActivity() {
                             "displayName" to displayName,
                             "bio" to bio
                         )
-                        docRef.set(updatedUserData, SetOptions.merge())
+                        userRef.set(updatedUserData, SetOptions.merge())
                     }
 
-                    addDarkLightModButtonListeners(
-                        (data?.get("stylePreference") ?: "dark") as String,
-                        (data?.get("usingSystemPreference") ?: false) as Boolean
-                    )
+                    addDarkLightModeButtonListeners()
 
                     // Create a reference to a file from a Google Cloud Storage URI
                     val avatarPath = (data?.get("avatar") ?: "") as String
@@ -113,6 +113,8 @@ class AccountActivity : AppCompatActivity() {
             .addOnFailureListener { exception ->
                 Log.d(TAG, "get failed with ", exception)
             }
+        } else{
+            Log.e(TAG, "User uid null")
         }
 
         val storagePath = helper.firebasePath + "/Profile_Pictures/"
@@ -158,20 +160,33 @@ class AccountActivity : AppCompatActivity() {
         defineBottomNavButtons()
     }
 
-    private fun addDarkLightModButtonListeners(stylePreference:String, usingSystemPreference: Boolean) {
+    /**
+     * StylePreferences : light / dark / system
+     */
+    private fun addDarkLightModeButtonListeners() {
+        val darkButton: Button = findViewById(R.id.mode_btn_dark)
+        val lightButton: Button = findViewById(R.id.mode_btn_light)
+        val systemButton: Button = findViewById(R.id.mode_btn_system)
+        applyDarkLightModeButtonListener(darkButton, AppCompatDelegate.MODE_NIGHT_YES, "dark")
+        applyDarkLightModeButtonListener(lightButton, AppCompatDelegate.MODE_NIGHT_NO, "light")
+        applyDarkLightModeButtonListener(systemButton, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM, "system")
+    }
+
+    private fun applyDarkLightModeButtonListener(button:Button, stylePreferenceInt:Int, stylePreference:String){
         val db = Firebase.firestore
-        val darkButton = findViewById<Button>(R.id.mode_btn_dark).apply{
+        button.apply{
             setOnClickListener {
-                val washingtonRef = db.collection("cities").document("DC")
-                washingtonRef
-                    .update("capital", true)
-                    .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully updated!") }
+                // set actual night mode
+                AppCompatDelegate.setDefaultNightMode(stylePreferenceInt)
+
+                // reflect change in database
+                val userRef = db.collection("users").document(uuid)
+                userRef
+                    .update("stylePreference", stylePreference)
+                    .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully updated for user $uuid!") }
                     .addOnFailureListener { e -> Log.w(TAG, "Error updating document", e) }
             }
         }
-        val lightButton: Button = findViewById(R.id.mode_btn_light)
-        val systemButton: Button = findViewById(R.id.mode_btn_system)
-
     }
 
     private fun populateBlockedList() {
