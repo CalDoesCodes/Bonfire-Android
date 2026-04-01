@@ -333,6 +333,43 @@
                 </Button>
 
 
+                <!--PREFERENCES-->
+                <TextView
+                    android:paddingTop="24dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Preferences"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <Button
+                        android:id="@+id/mode_btn_dark"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Dark"
+                        style="@style/Widget.Material3.Button.ElevatedButton"
+                        android:layout_weight="1"/>
+                    <Button
+                        android:id="@+id/mode_btn_light"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Light"
+                        style="@style/Widget.Material3.Button.ElevatedButton"
+                        android:layout_weight="1"/>
+                    <Button
+                        android:id="@+id/mode_btn_system"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="System"
+                        style="@style/Widget.Material3.Button.ElevatedButton"
+                        android:layout_weight="1"/>
+                </LinearLayout>
+
+
                 <!--BLOCKED USERS-->
                 <TextView
                     android:paddingTop="24dp"

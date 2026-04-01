@@ -14,6 +14,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
@@ -23,15 +24,15 @@ import com.bumptech.glide.Glide
 import com.google.firebase.storage.storage
 import androidx.core.content.edit
 import com.google.android.material.textfield.TextInputEditText
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.SetOptions
 
 
 class AccountActivity : AppCompatActivity() {
-    private var tag: String = "account_activity"
+    private var TAG: String = "account_activity"
     private val helper = Helper()
     private val channelId = "i.apps.notifications" // Unique channel ID for notifications
     private val description = "Message notification"  // Description for the notification channel
+    private var uuid = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,15 +60,16 @@ class AccountActivity : AppCompatActivity() {
 
         val displaynameEditText : TextInputEditText = findViewById(R.id.displayname_editText)
         val bioEditText : TextInputEditText = findViewById(R.id.bio_editText)
-        
+
+        uuid = user?.uid ?: ""
         val db = Firebase.firestore
         // get details of account
-        if (user?.uid != null) {
-            val docRef = db.collection("users").document(user.uid)
-            docRef.get()
+        if (uuid != "") {
+            val userRef = db.collection("users").document(uuid)
+            userRef.get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
-                    Log.d(tag, "DocumentSnapshot data: ${document.data}")
+                    Log.d(TAG, "DocumentSnapshot data: ${document.data}")
                     val data = document.data
 
                     // Update views to display accurate user info on screen
@@ -95,21 +97,24 @@ class AccountActivity : AppCompatActivity() {
                             "displayName" to displayName,
                             "bio" to bio
                         )
-                        docRef.set(updatedUserData, SetOptions.merge())
+                        userRef.set(updatedUserData, SetOptions.merge())
                     }
 
+                    addDarkLightModeButtonListeners()
 
                     // Create a reference to a file from a Google Cloud Storage URI
                     val avatarPath = (data?.get("avatar") ?: "") as String
 
                     helper.setProfilePicture(this, avatarPath, accountAvatarImageView)
                 } else {
-                    Log.d(tag, "No such document")
+                    Log.d(TAG, "No such document")
                 }
             }
             .addOnFailureListener { exception ->
-                Log.d(tag, "get failed with ", exception)
+                Log.d(TAG, "get failed with ", exception)
             }
+        } else{
+            Log.e(TAG, "User uid null")
         }
 
         val storagePath = helper.firebasePath + "/Profile_Pictures/"
@@ -137,13 +142,13 @@ class AccountActivity : AppCompatActivity() {
                         // change field in db
                         userRef
                             .update("avatar", uri.toString())
-                            .addOnSuccessListener { Log.d(tag, "DocumentSnapshot successfully updated!") }
-                            .addOnFailureListener { e -> Log.w(tag, "Error updating document", e) }
+                            .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully updated!") }
+                            .addOnFailureListener { e -> Log.w(TAG, "Error updating document", e) }
                     }.addOnFailureListener { e ->
-                        Log.e(tag, "Couldn't get avatar uri: $e")
+                        Log.e(TAG, "Couldn't get avatar uri: $e")
                     }
                 } catch (e: Exception) {
-                    Log.e(tag, "Error with avatar URI: $e")
+                    Log.e(TAG, "Error with avatar URI: $e")
                 }
             }
         }
@@ -153,6 +158,35 @@ class AccountActivity : AppCompatActivity() {
 
         populateBlockedList()
         helper.defineBottomNavButtons(this)
+    }
+
+    /**
+     * StylePreferences : light / dark / system
+     */
+    private fun addDarkLightModeButtonListeners() {
+        val darkButton: Button = findViewById(R.id.mode_btn_dark)
+        val lightButton: Button = findViewById(R.id.mode_btn_light)
+        val systemButton: Button = findViewById(R.id.mode_btn_system)
+        applyDarkLightModeButtonListener(darkButton, AppCompatDelegate.MODE_NIGHT_YES, "dark")
+        applyDarkLightModeButtonListener(lightButton, AppCompatDelegate.MODE_NIGHT_NO, "light")
+        applyDarkLightModeButtonListener(systemButton, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM, "system")
+    }
+
+    private fun applyDarkLightModeButtonListener(button:Button, stylePreferenceInt:Int, stylePreference:String){
+        val db = Firebase.firestore
+        button.apply{
+            setOnClickListener {
+                // set actual night mode
+                AppCompatDelegate.setDefaultNightMode(stylePreferenceInt)
+
+                // reflect change in database
+                val userRef = db.collection("users").document(uuid)
+                userRef
+                    .update("stylePreference", stylePreference)
+                    .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully updated for user $uuid!") }
+                    .addOnFailureListener { e -> Log.w(TAG, "Error updating document", e) }
+            }
+        }
     }
 
     private fun populateBlockedList() {
