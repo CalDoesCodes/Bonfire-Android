@@ -5,7 +5,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.CheckBox
 import android.widget.HorizontalScrollView
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -34,12 +33,15 @@ import java.util.UUID
 
 
 class ChatActivity : AppCompatActivity() {
-    val TAG = "chat"
+    val TAG = "ChatActivity"
     val uid = FirebaseAuth.getInstance().currentUser?.uid
     val db = Firebase.firestore
     val helper = Helper()
     private var chatList: ArrayList<Map<String, Any>?> = arrayListOf()
-    private var currentFriendId: String? = null
+    private var currentChatId: String? = null
+    lateinit var chatType : ChatType
+    lateinit var chatAvatar : String
+    lateinit var chatName : String
 
     private fun notifPrefs() = getSharedPreferences("notif_limits", MODE_PRIVATE)
     private fun unopenedKey(friendId: String) = "unopened_$friendId"
@@ -57,11 +59,15 @@ class ChatActivity : AppCompatActivity() {
 
         // read in friendId to open correct chat
         val b = intent.extras
-        var friendId: String? = b?.getString("id") ?: ""
+        var friendId: String? = b?.getString("com.example.bonfire.id") ?: ""
+        Log.d(TAG, "${b?.getString("com.example.bonfire.chatType")}")
+        chatType = ChatType.getByName(b?.getString("com.example.bonfire.chatType")?: "")!!
         if(friendId == ""){
             friendId = null
         }
-        currentFriendId = friendId
+        currentChatId = friendId
+        chatAvatar = b?.getString("com.example.bonfire.avatar") ?: ""
+        chatName = b?.getString("com.example.bonfire.name") ?: ""
 
         val recyclerView: RecyclerView = findViewById(R.id.chat_messages_RecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -69,12 +75,15 @@ class ChatActivity : AppCompatActivity() {
 
         // if friendId == null, we are in global chat
         messagesPath = "messages"
-        if (isPrivateChat(friendId)){
+        if (chatType == ChatType.PRIVATE){
             val chatIdArray = arrayOf(uid, friendId)
             chatIdArray.sort()
             val chatId = chatIdArray.joinToString("_")
             messagesPath = "chats/$chatId/messages"
+        } else if (chatType == ChatType.GROUP){
+            messagesPath = "groupChats/$currentChatId/messages"
         }
+        Log.d(TAG, "chat type $chatType ${chatType.name}")
 
         imagePickerLauncher = registerForActivityResult(
             ActivityResultContracts.GetContent()
@@ -96,7 +105,7 @@ class ChatActivity : AppCompatActivity() {
             if (document != null) {
                 userData = document.data as Map<String, Object>
                 createSendButton(userData, recyclerView)
-                setChatName(friendId ?: "")
+                setChatName()
             } else {
                 Log.d(TAG, "No such document")
             }
@@ -147,30 +156,12 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    fun setChatName(friendId:String){
-        // Set chat name (name of person you're talking to)
-        if (isPrivateChat(friendId)){
-            // get name of friend
-            val docRef = db.collection("users").document(friendId)
-            docRef.get()
-            .addOnSuccessListener { document ->
-                if (document != null) {
-                    //Log.d("chatname", "DocumentSnapshot data: ${document.data}")
-                    val data = document.data
-                    val chatName : TextView = findViewById(R.id.chat_cardView_UserName)
-                    chatName.text = (data?.get("name") ?: "") as String
+    fun setChatName(){
+        val chatTextName : TextView = findViewById(R.id.chat_cardView_UserName)
+        chatTextName.text = chatName as CharSequence?
 
-                    val friendAvatar : ShapeableImageView = findViewById(R.id.chat_cardView_UserIcon)
-                    val avatar = (data?.get("avatar") ?: "") as String
-                    helper.setProfilePicture(this, avatar, friendAvatar)
-                } else {
-                    Log.d(TAG, "No such document")
-                }
-            }
-            .addOnFailureListener { exception ->
-                Log.d(TAG, "get failed with ", exception)
-            }
-        }
+        val friendAvatar : ShapeableImageView = findViewById(R.id.chat_cardView_UserIcon)
+        helper.setProfilePicture(this, chatAvatar, friendAvatar)
     }
 
     fun messageSendDropList() {
@@ -350,23 +341,7 @@ class ChatActivity : AppCompatActivity() {
     private fun createData(friendId: String?){
         val db = Firebase.firestore
 
-        // Generate chatId, which is the two users, combined
-        // And generate messagesPath depending if global or private
-        // Ex. userId = "abc" and friendId = "bcd" -> chatId = "abc_bcd"
-        var chatId = ""
-        var messagesPath = "messages"
-
-        if (isPrivateChat(friendId)){
-            val chatIdArray = arrayOf(uid, friendId)
-            chatIdArray.sort()
-
-            chatId = chatIdArray.joinToString("_")
-            messagesPath = "chats/$chatId/messages"
-        }
-        Log.i(TAG, chatId)
-
-
-        //val friendDocument = getDocumentReference(db, "users", friendId.toString())
+        Log.d(TAG, messagesPath)
 
         // Reads messages from chats/[chatId]/messages (global chat) into messageData arrayList
         //val messageData = ArrayList<Map<String, Any>?>()
@@ -394,19 +369,19 @@ class ChatActivity : AppCompatActivity() {
             }
 
             val recyclerView: RecyclerView = findViewById(R.id.chat_messages_RecyclerView)
-            recyclerView.adapter = MessageAdapter(chatList, isPrivateChat(friendId), uid.toString())
+            recyclerView.adapter = MessageAdapter(chatList, isPrivateChat(), uid.toString())
             // scroll to bottom
             recyclerView.scrollToPosition(chatList.size - 1)
         }
     }
 
-    fun isPrivateChat(friendId:String?) : Boolean{
-        return !(friendId == null || friendId == "")
+    fun isPrivateChat() : Boolean{
+        return chatType == ChatType.PRIVATE
     }
 
     override fun onResume() {
         super.onResume()
-        val friendId = currentFriendId ?: return
+        val friendId = currentChatId ?: return
         notifPrefs().edit().putInt(unopenedKey(friendId), 0).apply()
         // mark this chat open
         notifPrefs().edit().putString(OPEN_CHAT_KEY, friendId).apply()
@@ -414,7 +389,7 @@ class ChatActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        val friendId = currentFriendId ?: return
+        val friendId = currentChatId ?: return
 
         // clear only if we are still the open chat (avoid races)
         if (notifPrefs().getString(OPEN_CHAT_KEY, null) == friendId) {

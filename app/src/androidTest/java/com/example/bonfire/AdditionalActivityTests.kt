@@ -262,16 +262,6 @@ class AdditionalActivityTests {
     }
 
     @Test
-    fun testChat_IsPrivate_LogicalTruthTable() {
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            val chat = ChatActivity()
-            assertTrue(chat.isPrivateChat("user123"))
-            assertFalse(chat.isPrivateChat(null))
-            assertFalse(chat.isPrivateChat(""))
-        }
-    }
-
-    @Test
     fun testHelper_FirebasePath_Static() {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val helper = Helper()

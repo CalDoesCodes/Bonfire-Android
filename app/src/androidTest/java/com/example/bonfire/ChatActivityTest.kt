@@ -38,16 +38,6 @@ class ChatActivityTest {
     }
 
     @Test
-    fun testIsPrivateChat_WithNull() {
-        assertFalse("Null friendId should not be a private chat", chatActivity.isPrivateChat(null))
-    }
-
-    @Test
-    fun testIsPrivateChat_WithId() {
-        assertTrue("Non-null friendId should be a private chat", chatActivity.isPrivateChat("some_uid"))
-    }
-
-    @Test
     fun testActivityLaunch_NoId() {
         ActivityScenario.launch(ChatActivity::class.java).use {
             onView(withId(R.id.chat_messages_RecyclerView)).check(matches(isDisplayed()))

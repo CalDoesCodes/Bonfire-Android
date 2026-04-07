@@ -23,11 +23,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
 import androidx.core.content.edit
-import com.example.bonfire.Helper
-
 
 class GroupChatListActivity : AppCompatActivity() {
-    private val tag = "chat list"
+    val TAG = "GroupChatListActivity"
     val uid = FirebaseAuth.getInstance().currentUser?.uid
     val db = Firebase.firestore
     val helper = Helper()
@@ -46,7 +44,7 @@ class GroupChatListActivity : AppCompatActivity() {
         setContentView(R.layout.groupchat_list_layout)
 
         if (!uid.isNullOrEmpty()) {
-            val userRef = db.collection("users").document(uid!!)
+            val userRef = db.collection("users").document(uid)
             userRef.get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
@@ -56,14 +54,19 @@ class GroupChatListActivity : AppCompatActivity() {
 
                     // Open global chat button
                     val globalChat = findViewById<View>(R.id.global_chat)
-                    generateOpenChatButton(globalChat.findViewById<CardView>(R.id.card_chat_list_message), null)
+                    generateOpenChatButton(globalChat.findViewById<CardView>(R.id.card_chat_list_message), null, ChatType.GLOBAL, "Global Chat", "")
 
                     val userData = document.data
+                    // Get all user friends and call populateFriendList() to create cards for each private chat
                     val userFriends = userData?.get("friends") as? List<*>
-                    Log.d(tag, "user friend list found")
+                    Log.d(TAG, "user friend list found")
                     if (!userFriends.isNullOrEmpty()){
                         @Suppress("UNCHECKED_CAST")
-                        populateFriendList(db, userFriends as List<String>)
+                        // dynamically generate friend view in list
+                        val groupChatList : LinearLayout = findViewById(R.id.list_messages_LinearLayout)
+
+                        populateFriendList(db, userFriends as List<String>, groupChatList)
+                        populateGroupChatList(db, groupChatList)
                     } else{
                         // Add text if user has no friends
                         val groupChatList : LinearLayout = findViewById(R.id.list_messages_LinearLayout)
@@ -74,13 +77,13 @@ class GroupChatListActivity : AppCompatActivity() {
                         noFriendText.textAlignment = View.TEXT_ALIGNMENT_CENTER
                         groupChatList.addView(noFriendText)
                     }
-                    Log.d(tag, "${userFriends.toString()} user friend list found")
+                    Log.d(TAG, "${userFriends.toString()} user friend list found")
                 } else {
-                    Log.d(tag, "No such document")
+                    Log.d(TAG, "No such document")
                 }
             }
             .addOnFailureListener { exception ->
-                Log.d(tag, "get failed with ", exception)
+                Log.d(TAG, "get failed with ", exception)
             }
         }
         helper.listenForNotifs(uid ?: "", this)
@@ -94,15 +97,14 @@ class GroupChatListActivity : AppCompatActivity() {
      * @param db: Firebase database to get backend information from
      * @param userFriends: List of friend ids
      */
-    private fun populateFriendList(db: FirebaseFirestore, userFriends:List<String>) {
-        val groupChatList : LinearLayout = findViewById(R.id.list_messages_LinearLayout)
+    private fun populateFriendList(db: FirebaseFirestore, userFriends:List<String>, groupChatList: LinearLayout) {
         val blockedPref : SharedPreferences = getSharedPreferences("blocked", MODE_PRIVATE)
 
         for (friendId in userFriends) {
             // Skip if blocked
             if (blockedPref.getBoolean(friendId, false)) continue
 
-            Log.d(tag, "friendId $friendId")
+            Log.d(TAG, "friendId $friendId")
 
             // Find data of friend
             val docRef = db.collection("users").document(friendId)
@@ -111,36 +113,84 @@ class GroupChatListActivity : AppCompatActivity() {
                 if (document != null && document.exists()) {
                     val friendData = document.data ?: return@addOnSuccessListener
                     // Friend data found
-                    // dynamically generate friend view in list
-                    val friendView = LayoutInflater.from(this).inflate(R.layout.groupchat_layout, groupChatList, false)
-
-                    val friendName : TextView = friendView.findViewById(R.id.text_chat_list_user)
-                    friendName.text = (friendData["name"] ?: "Anonymous").toString()
-
-                    val friendAvatarView : ShapeableImageView = friendView.findViewById(R.id.text_chat_list_avatar)
-                    val avatar = (friendData["avatar"] ?: "").toString()
-                    helper.setProfilePicture(this, avatar, friendAvatarView)
-
-
-                    // Generate button listener that will open chat with friend
-                    generateOpenChatButton(friendView, friendId)
-
-                    // button listener to show dropdown menu for options
-                    val optionsButton: ImageButton = friendView.findViewById(R.id.text_chat_list_message_options)
-                    setUpOptionsButton(optionsButton, friendId, friendName.text, groupChatList,  blockedPref, friendView)
-
-                    displayUnreadBubble(friendView, friendId, friendData)
-
-                    //Add the friendView to the groupChatList parent Linear Layout
-                    groupChatList.addView(friendView)
+                    addFriendView(friendData, friendId, blockedPref, groupChatList)
                 } else {
-                    Log.d(tag, "No such document")
+                    Log.d(TAG, "No such document")
                 }
             }
             .addOnFailureListener { exception ->
-                Log.d(tag, "get failed with ", exception)
+                Log.d(TAG, "get failed with ", exception)
             }
         }
+    }
+
+
+    /**
+     * Generate list of group chats that include the user, with a button that will open the group chat
+     *
+     * @param db: Firebase database to get backend information from
+     */
+    fun populateGroupChatList(db: FirebaseFirestore, groupChatList: LinearLayout){
+        // Return all group chats that include the user
+        val groupChatRef = db.collection("groupChats").whereArrayContains("memberIds", uid!!)
+        groupChatRef.get()
+        .addOnSuccessListener { documents ->
+            for (document in documents){
+                val chatData = document.data
+                addGroupChatView(chatData, document.id, groupChatList)
+            }
+        }
+        .addOnFailureListener { exception ->
+            Log.d(TAG, "group chat get failed with ", exception)
+        }
+    }
+
+    /**
+     * Generate friend view and add it to groupChatList
+     *
+     */
+    fun addFriendView(friendData:Map<String, Any>, chatId:String, blockedPref: SharedPreferences, groupChatList: LinearLayout){
+        val friendView = LayoutInflater.from(this).inflate(R.layout.groupchat_layout, groupChatList, false)
+
+        val friendName : TextView = friendView.findViewById(R.id.text_chat_list_user)
+        friendName.text = (friendData["name"] ?: "Anonymous").toString()
+
+        val friendAvatarView : ShapeableImageView = friendView.findViewById(R.id.text_chat_list_avatar)
+        val avatar = (friendData["avatar"] ?: "").toString()
+        helper.setProfilePicture(this, avatar, friendAvatarView)
+
+        // Generate button listener that will open chat with friend
+        generateOpenChatButton(friendView, chatId, ChatType.PRIVATE, avatar, friendName.text as String)
+
+        // button listener to show dropdown menu for options
+        val optionsButton: ImageButton = friendView.findViewById(R.id.text_chat_list_message_options)
+        setUpOptionsButton(optionsButton, chatId, friendName.text, groupChatList,  blockedPref, friendView)
+
+        displayUnreadBubble(friendView, chatId, friendData)
+
+        //Add the friendView to the groupChatList parent Linear Layout
+        groupChatList.addView(friendView)
+    }
+
+    /**
+     * Generate group chat view and add it to groupChatList
+     *
+     */
+    fun addGroupChatView(friendData:Map<String, Any>, chatId:String, groupChatList: LinearLayout){
+        val friendView = LayoutInflater.from(this).inflate(R.layout.groupchat_layout, groupChatList, false)
+
+        val friendName : TextView = friendView.findViewById(R.id.text_chat_list_user)
+        friendName.text = (friendData["name"] ?: "Group Chat").toString()
+
+        val friendAvatarView : ShapeableImageView = friendView.findViewById(R.id.text_chat_list_avatar)
+        val avatar = (friendData["avatar"] ?: "").toString()
+        helper.setProfilePicture(this, avatar, friendAvatarView)
+
+        // Generate button listener that will open chat with friend
+        generateOpenChatButton(friendView, chatId, ChatType.GROUP, avatar, friendName.text as String)
+
+        //Add the friendView to the groupChatList parent Linear Layout
+        groupChatList.addView(friendView)
     }
 
     /**
@@ -231,15 +281,21 @@ class GroupChatListActivity : AppCompatActivity() {
      * @param friendView view that the button is targeting
      * @param friendId Id of friend to find the chat to open
      */
-    private fun generateOpenChatButton(friendView: View, friendId: String?) : CardView {
+    private fun generateOpenChatButton(friendView: View, friendId: String?, chatType: ChatType, avatar:String, name:String) : CardView {
         val button = friendView.findViewById<CardView>(R.id.card_chat_list_message)
+        Log.d(TAG, "Sets up the button to open a specific chat $chatType $friendId $avatar $name")
+
         button.setOnClickListener {
             val intent = Intent(this, ChatActivity::class.java)
 
             // Passes friendID to chat activity
             if (friendId != null) {
-                intent.putExtra("id", friendId)
+                intent.putExtra("com.example.bonfire.chatType", chatType.toString())
+                intent.putExtra("com.example.bonfire.id", friendId)
+                intent.putExtra("com.example.bonfire.avatar", avatar)
+                intent.putExtra("com.example.bonfire.name", name)
             }
+
             ContextCompat.startActivity(this, intent, null)
             finish()
         }
@@ -265,7 +321,7 @@ class GroupChatListActivity : AppCompatActivity() {
             for (chatDoc in chatDocs){
                 if (chatDoc != null && chatDoc.exists()) {
                     val chatData = chatDoc.data
-                    Log.d(tag, "read:${chatData["read"] ?: ""}. newest message found in chat with ${friendData?.get("name") ?: "" }, '${chatDoc.data["text"] ?: ""}'" )
+                    Log.d(TAG, "read:${chatData["read"] ?: ""}. newest message found in chat with ${friendData?.get("name") ?: "" }, '${chatDoc.data["text"] ?: ""}'" )
                     // If it's an old message without the "read" field, it will be assumed to be read
                     if (chatData["read"] == false       // If not read
                     && chatData["senderId"] != uid) {   // If you sent the last message, you've obviously read all the recent messages
