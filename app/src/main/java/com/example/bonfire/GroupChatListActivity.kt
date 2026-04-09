@@ -59,6 +59,7 @@ class GroupChatListActivity : AppCompatActivity() {
                     val userData = document.data
                     // Get all user friends and call populateFriendList() to create cards for each private chat
                     val userFriends = userData?.get("friends") as? List<*>
+
                     Log.d(TAG, "user friend list found")
                     if (!userFriends.isNullOrEmpty()){
                         @Suppress("UNCHECKED_CAST")
@@ -67,6 +68,13 @@ class GroupChatListActivity : AppCompatActivity() {
 
                         populateFriendList(db, userFriends as List<String>, groupChatList)
                         populateGroupChatList(db, groupChatList)
+
+                        // create group chat button
+                        val createGroupChat = findViewById<View>(R.id.make_groupchat)
+                        createGroupChat.setOnClickListener {
+                            val groupChatMakeModal = GroupChatMakeModal()
+                            groupChatMakeModal.openModal(this, userFriends)
+                        }
                     } else{
                         // Add text if user has no friends
                         val groupChatList : LinearLayout = findViewById(R.id.list_messages_LinearLayout)

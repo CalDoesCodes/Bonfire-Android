@@ -41,6 +41,11 @@
                 android:id="@+id/global_chat"
                 layout="@layout/globalchat_layout"/>
 
+            <include
+                android:id="@+id/make_groupchat"
+                layout="@layout/groupchat_make_layout"/>
+
+
             <TextView
                 android:id="@+id/groupchat_list_loading"
                 android:layout_marginTop="16dp"
