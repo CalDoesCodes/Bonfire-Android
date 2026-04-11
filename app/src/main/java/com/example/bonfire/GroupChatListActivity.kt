@@ -1,5 +1,6 @@
 package com.example.bonfire
 
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -13,16 +14,18 @@ import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
-import androidx.core.content.edit
+
 
 class GroupChatListActivity : AppCompatActivity() {
     val TAG = "GroupChatListActivity"
@@ -169,7 +172,7 @@ class GroupChatListActivity : AppCompatActivity() {
         generateOpenChatButton(friendView, chatId, ChatType.PRIVATE, avatar, friendName.text as String)
 
         // button listener to show dropdown menu for options
-        val optionsButton: ImageButton = friendView.findViewById(R.id.text_chat_list_message_options)
+        val optionsButton: ImageButton = friendView.findViewById(R.id.chat_options)
         setUpOptionsButton(optionsButton, chatId, friendName.text, groupChatList,  blockedPref, friendView)
 
         displayUnreadBubble(friendView, chatId, friendData)
@@ -183,21 +186,77 @@ class GroupChatListActivity : AppCompatActivity() {
      *
      */
     fun addGroupChatView(friendData:Map<String, Any>, chatId:String, groupChatList: LinearLayout){
-        val friendView = LayoutInflater.from(this).inflate(R.layout.groupchat_layout, groupChatList, false)
+        val groupChatView = LayoutInflater.from(this).inflate(R.layout.groupchat_layout, groupChatList, false)
 
-        val friendName : TextView = friendView.findViewById(R.id.text_chat_list_user)
+        val friendName : TextView = groupChatView.findViewById(R.id.text_chat_list_user)
         friendName.text = (friendData["name"] ?: "Group Chat").toString()
 
-        val friendAvatarView : ShapeableImageView = friendView.findViewById(R.id.text_chat_list_avatar)
+        val friendAvatarView : ShapeableImageView = groupChatView.findViewById(R.id.text_chat_list_avatar)
         val avatar = (friendData["avatar"] ?: "").toString()
         helper.setProfilePicture(this, avatar, friendAvatarView)
 
         // Generate button listener that will open chat with friend
-        generateOpenChatButton(friendView, chatId, ChatType.GROUP, avatar, friendName.text as String)
+        generateOpenChatButton(groupChatView, chatId, ChatType.GROUP, avatar, friendName.text as String)
+
+        val groupChatOwner : String = (friendData["createdBy"] ?: "") as String
+
+        // generate options menu 3 dots on click listener
+        val optionsButton = groupChatView.findViewById<ImageButton>(R.id.chat_options)
+        setUpOptionsGroupChatButton(optionsButton, chatId, groupChatList, groupChatView, groupChatOwner)
 
         //Add the friendView to the groupChatList parent Linear Layout
-        groupChatList.addView(friendView)
+        groupChatList.addView(groupChatView)
     }
+
+    fun setUpOptionsGroupChatButton(optionsButton: ImageButton, groupChatId: String, groupChatList : LinearLayout,
+                                    groupChatView: View, groupChatOwner: String){
+        optionsButton.setOnClickListener { view ->
+            val popup = PopupMenu(this, view)
+            popup.menuInflater.inflate(R.menu.groupchat_options_menu, popup.menu)
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    // Delete group chat button
+                    R.id.action_delete -> {
+                        // "wait are you even the owner of the group chat?"
+                        if(uid == groupChatOwner){
+                            // "Are you sure?" pop up
+                            val dialogClickListener: DialogInterface.OnClickListener =
+                                DialogInterface.OnClickListener { dialog, which ->
+                                    when (which) {
+                                        DialogInterface.BUTTON_POSITIVE -> {
+                                            // really do it
+                                            db.collection("groupChats").document(groupChatId)
+                                                .delete()
+                                                .addOnSuccessListener { Log.d(TAG, "Group chat successfully deleted!") }
+                                                .addOnFailureListener { e -> Log.w(TAG, "Error deleting group chat", e) }
+
+                                            // remove in list
+                                            groupChatList.removeView(groupChatView)
+
+                                        }
+                                        DialogInterface.BUTTON_NEGATIVE -> {
+                                            true
+                                        }
+                                    }
+                                }
+                            val builder: AlertDialog.Builder = AlertDialog.Builder(this)
+                            builder.setMessage("Delete this group chat? This cannot be undone.")
+                                .setPositiveButton("Yes", dialogClickListener)
+                                .setNegativeButton("No", dialogClickListener).show()
+
+                        } else{
+                            helper.makeToast(this, "You are not the owner of this group chat.")
+                        }
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popup.show()
+        }
+    }
+
+
 
     /**
      * Sets up the options button (three vertical dots) for a friend for chatting
