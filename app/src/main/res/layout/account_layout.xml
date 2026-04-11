@@ -89,7 +89,7 @@
                     android:id="@+id/account_grid"
                     android:layout_gravity="center"
                     android:layout_width="match_parent"
-                    android:layout_height="200dp"
+                    android:layout_height="185dp"
                     android:rowCount="3"
                     android:columnCount="5"
                     android:alignmentMode="alignBounds"
@@ -329,7 +329,9 @@
                     android:layout_height="wrap_content"
                     android:layout_margin="8dp"
                     android:text="Save changes"
-                    style="@style/Widget.Material3.Button.ElevatedButton">
+                    android:backgroundTint="@color/semi_dark_brown"
+                    style="@style/Widget.Material3.Button.IconButton.Filled"
+                    android:textColor="@color/white">
                 </Button>
 
 
@@ -351,21 +353,27 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Dark"
-                        style="@style/Widget.Material3.Button.ElevatedButton"
+                        android:textColor="@color/white"
+                        android:backgroundTint="@color/semi_dark_brown"
+                        style="@style/Widget.Material3.Button.IconButton.Filled"
                         android:layout_weight="1"/>
                     <Button
                         android:id="@+id/mode_btn_light"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Light"
-                        style="@style/Widget.Material3.Button.ElevatedButton"
+                        android:textColor="@color/white"
+                        android:backgroundTint="@color/semi_dark_brown"
+                        style="@style/Widget.Material3.Button.IconButton.Filled"
                         android:layout_weight="1"/>
                     <Button
                         android:id="@+id/mode_btn_system"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="System"
-                        style="@style/Widget.Material3.Button.ElevatedButton"
+                        android:textColor="@color/white"
+                        android:backgroundTint="@color/semi_dark_brown"
+                        style="@style/Widget.Material3.Button.IconButton.Filled"
                         android:layout_weight="1"/>
                 </LinearLayout>
 

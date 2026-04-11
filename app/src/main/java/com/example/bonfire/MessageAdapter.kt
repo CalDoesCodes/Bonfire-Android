@@ -1,16 +1,22 @@
 package com.example.bonfire
 
+import android.content.res.ColorStateList
+import android.content.res.Resources
 import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
+import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
@@ -38,6 +44,8 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
         val voiceMessageCard: CardView = view.findViewById(R.id.voiceMessageCard)
         val voiceMessageLength: TextView = view.findViewById(R.id.voiceMessageLength)
         val voiceMessageImageButton: ImageButton = view.findViewById(R.id.voiceMessageImageButton)
+        val messageRelativeLayout: RelativeLayout = view.findViewById(R.id.message_image_RelativeLayout)
+        val messageSpoilerButton : Button = view.findViewById(R.id.message_spoiler_button)
         val mediaPlayer = MediaPlayer()
     }
 
@@ -71,6 +79,18 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
         // If voice message in message is null, hide imageView
         holder.voiceMessageCard.isGone = message["audioUrl"] == null
 
+        // hide image which will reveal after a button click
+        if(message["spoilered"] == true){
+            holder.messageRelativeLayout.setOnClickListener {
+                unspoilerImage(holder.messageImageView, holder.messageSpoilerButton)
+            }
+            holder.messageSpoilerButton.setOnClickListener {
+                unspoilerImage(holder.messageImageView, holder.messageSpoilerButton)
+            }
+        } else{
+            unspoilerImage(holder.messageImageView, holder.messageSpoilerButton)
+        }
+
         // else initialize voice message
         if (message["audioUrl"] != null){
             holder.voiceMessageCard.isGone = false
@@ -93,6 +113,11 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
             holder.checkReadImageView.setImageResource(checkReadImageViewId)
             holder.checkReadImageView.visibility = View.VISIBLE
         }
+    }
+
+    fun unspoilerImage(messageImageView: ImageView, messageSpoilerButton: Button){
+        messageImageView.imageTintList = null
+        messageSpoilerButton.visibility = View.GONE
     }
 
     private fun handleVoicePlayback(holder: ItemViewHolder, position: Int, voiceUrl: String) {

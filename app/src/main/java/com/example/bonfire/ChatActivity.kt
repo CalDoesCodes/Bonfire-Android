@@ -52,6 +52,8 @@ class ChatActivity : AppCompatActivity() {
     var emojisPopulated = false
     var messagesPath = ""
 
+    var spoil_image : Boolean = false
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -186,6 +188,12 @@ class ChatActivity : AppCompatActivity() {
                 when (item.itemId) {
                     R.id.action_image -> {
                         imagePickerLauncher.launch("image/*")
+                        spoil_image = false
+                        true
+                    }
+                    R.id.action_image_spoilered -> {
+                        imagePickerLauncher.launch("image/*")
+                        spoil_image = true
                         true
                     }
                     R.id.action_emoji -> {
@@ -211,6 +219,7 @@ class ChatActivity : AppCompatActivity() {
         val messageData = hashMapOf(
             "displayName" to userData["name"],
             "photoURL" to userData["avatar"],
+            "spoilered" to spoil_image,
             "audioUrl" to path,
             "audioType" to "audio/webm",
             "audioName" to "voice-message.webm",
@@ -219,6 +228,7 @@ class ChatActivity : AppCompatActivity() {
             "text" to "",
             "timestamp" to Timestamp.now()
         )
+        spoil_image = false
 
         db.collection(messagesPath).document().set(messageData)
 
@@ -303,12 +313,14 @@ class ChatActivity : AppCompatActivity() {
         val messageData = hashMapOf(
             "displayName" to userData["name"],
             "photoURL" to userData["avatar"],
+            "spoilered" to spoil_image,
             "imageUrl" to imageUrl,
             "read" to false,
             "senderId" to uid,
             "text" to "",
             "timestamp" to Timestamp.now()
         )
+        spoil_image = false
 
         db.collection(messagesPath).document().set(messageData)
     }
@@ -322,6 +334,7 @@ class ChatActivity : AppCompatActivity() {
                 val messageData = hashMapOf(
                     "displayName" to userData["name"],
                     "photoURL" to userData["avatar"],
+                    "spoilered" to spoil_image,
                     "read" to false,
                     "senderId" to uid,
                     "text" to messageSend,
@@ -329,6 +342,7 @@ class ChatActivity : AppCompatActivity() {
                 )
                 db.collection(messagesPath).document().set(messageData)
             }
+            spoil_image = false
             emailEditText.setText("")
             recyclerView.scrollToPosition(chatList.size - 1)
         }
