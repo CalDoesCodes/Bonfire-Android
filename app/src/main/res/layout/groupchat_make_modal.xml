@@ -70,12 +70,17 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"/>
+        android:textColor="@color/white"
+        style="@style/Widget.Material3.Button.IconButton.Filled"
+        android:backgroundTint="@color/semi_dark_brown"
+        />
 
     <Button
         android:id="@+id/closeBtn"
         android:text="Close"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"/>
+        android:textColor="@color/white"
+        android:backgroundTint="@color/semi_dark_brown"
+        style="@style/Widget.Material3.Button.IconButton.Filled"/>
 </LinearLayout>
