@@ -12,6 +12,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.cardview.widget.CardView
+import androidx.core.widget.addTextChangedListener
 import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
@@ -25,50 +26,53 @@ import com.google.firebase.storage.storage
 internal class GroupChatMakeModal {
     val addedFriendIDs = mutableListOf<String>()
     val helper = Helper()
-    lateinit var dialogView : View
-    lateinit var createBtn : Button
     val db = Firebase.firestore
     val TAG = "Group chat make modal"
     lateinit var context: Context
-    lateinit var linearLayout : LinearLayout
     val uid = FirebaseAuth.getInstance().currentUser?.uid
+
+    lateinit var dialogView : View
+    lateinit var createBtn : Button
+    lateinit var linearLayout : LinearLayout
+    lateinit var editText :TextInputEditText
 
 
     fun openModal(context: Context, friendIDs: List<String>) {
         val activity = context as Activity
         dialogView = activity.layoutInflater.inflate(R.layout.groupchat_make_modal, null)
+
         this.context = context
-        this.linearLayout = dialogView.findViewById(R.id.groupchat_make_modal_linearLayout)
+        linearLayout = dialogView.findViewById(R.id.groupchat_make_modal_linearLayout)
+        editText = dialogView.findViewById(R.id.groupChat_edit)
+        createBtn = dialogView.findViewById(R.id.createBtn)
 
         val builder = AlertDialog.Builder(context)
         val dialog = builder.create()
         dialog.setView(dialogView)
         dialog.show()
 
-        val editText = dialogView.findViewById<TextInputEditText>(R.id.groupChat_edit)
-        createBtn = dialogView.findViewById(R.id.createBtn)
+        // Immediately disable create button
+        updateCreateButtonState()
+
         createBtn.setOnClickListener {
-            // Only valid if group chat is named and has 2+ friends
-            if(addedFriendIDs.size >= 2 &&
-                editText.text.toString().isNotEmpty()) {
-                createGroupChat(editText.text.toString())
-                dialog.dismiss()
-            }
+            createGroupChat(editText.text.toString())
+            dialog.dismiss()
         }
-        markButtonDisable()
 
         val closeBtn = dialogView.findViewById<Button>(R.id.closeBtn)
         closeBtn.setOnClickListener {
             dialog.cancel()
         }
 
-        generateListOfFriends(friendIDs)
+        editText.addTextChangedListener {
+            updateCreateButtonState()
+        }
 
+        generateListOfFriends(friendIDs)
         dialog.show()
     }
 
     private fun generateListOfFriends(friendIDs: List<String>) {
-
         for (friendID in friendIDs){
             // Get avatar of friend
             val docRef = db.collection("users").document(friendID)
@@ -107,34 +111,31 @@ internal class GroupChatMakeModal {
     }
 
     fun addFriend(friendID: String){
-        val editText = dialogView.findViewById<TextInputEditText>(R.id.groupChat_edit)
         addedFriendIDs.add(friendID)
-        if(addedFriendIDs.size >= 2
-            && editText.text.toString().isNotEmpty()){
-            markButtonEnable()
-        }
+        updateCreateButtonState()
     }
 
     fun removeFriend(friendID:String){
         addedFriendIDs.remove(friendID)
-        if(addedFriendIDs.size < 2){
-            markButtonDisable()
+        updateCreateButtonState()
+    }
+
+    fun updateCreateButtonState(){
+        // Enable create group chat button if group chat has two+ friends and a name
+        if(addedFriendIDs.size >= 2
+            && editText.text.toString().isNotEmpty()){
+            createBtn.isEnabled = true
+            createBtn.isClickable = true
+        } else{
+            createBtn.isEnabled = false
+            createBtn.isClickable = false
         }
     }
 
-    fun markButtonDisable() {
-        createBtn.isEnabled = false
-        createBtn.isClickable = false
-        createBtn.text = ""
-    }
-
-    fun markButtonEnable() {
-        createBtn.isEnabled = true
-        createBtn.isClickable = true
-        createBtn.text = "Create group chat"
-    }
-
     private fun createGroupChat(chatName: String) {
+        // don't forget to include yourself in the group chat!
+        addedFriendIDs.add(uid.toString())
+
         val storage = Firebase.storage
         try {
             // Get URI of default profile picture

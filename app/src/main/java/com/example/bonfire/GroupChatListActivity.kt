@@ -112,8 +112,6 @@ class GroupChatListActivity : AppCompatActivity() {
             // Skip if blocked
             if (blockedPref.getBoolean(friendId, false)) continue
 
-            Log.d(TAG, "friendId $friendId")
-
             // Find data of friend
             val docRef = db.collection("users").document(friendId)
             docRef.get()
