@@ -41,7 +41,7 @@
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
                 android:text="Loading..."
-                android:textSize="24sp"
+                android:textSize="20sp"
                 android:textStyle="bold" />
 
 

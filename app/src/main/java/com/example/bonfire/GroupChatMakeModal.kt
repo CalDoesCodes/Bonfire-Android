@@ -7,8 +7,11 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.cardview.widget.CardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
@@ -52,6 +55,7 @@ internal class GroupChatMakeModal {
                 dialog.dismiss()
             }
         }
+        markButtonDisable()
 
         val closeBtn = dialogView.findViewById<Button>(R.id.closeBtn)
         closeBtn.setOnClickListener {
@@ -71,11 +75,27 @@ internal class GroupChatMakeModal {
             docRef.get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
-                    val friendView = LayoutInflater.from(context).inflate(R.layout.friend_add_groupchat_layout, linearLayout, true)
+                    // Create card of friend in list of friends to add
+                    val friendView = LayoutInflater.from(context).inflate(R.layout.groupchat_make_friend_layout, linearLayout, false)
                     val friendData = document.data ?: return@addOnSuccessListener
-                    // Friend data found, update avatar
-                    helper.setProfilePicture(context, (friendData["avatar"] ?: "") as String, friendView.findViewById<ImageView>(R.id.avatar))
 
+                    // Friend data found, update avatar and name
+                    val friendCard = friendView.findViewById<CardView>(R.id.card_friend_add_groupchat)
+                    helper.setProfilePicture(context, (friendData["avatar"] ?: "") as String, friendView.findViewById<ImageView>(R.id.avatar))
+                    val friendName = friendCard.findViewById<TextView>(R.id.friend_add_groupchat_name)
+                    friendName.text = (friendData["displayName"] ?: "") as String
+                    val friendCheck = friendCard.findViewById<CheckBox>(R.id.friend_add_groupchat_check_box)
+
+                    friendCard.setOnClickListener {
+                        // Toggle check box
+                        friendCheck.isChecked = !friendCheck.isChecked
+                        if (friendCheck.isChecked){
+                            addFriend(document.id)
+                        } else{
+                            removeFriend(document.id)
+                        }
+                    }
+                    linearLayout.addView(friendView)
                 } else {
                     Log.d(TAG, "No such document")
                 }
@@ -87,8 +107,10 @@ internal class GroupChatMakeModal {
     }
 
     fun addFriend(friendID: String){
+        val editText = dialogView.findViewById<TextInputEditText>(R.id.groupChat_edit)
         addedFriendIDs.add(friendID)
-        if(addedFriendIDs.size >= 2){
+        if(addedFriendIDs.size >= 2
+            && editText.text.toString().isNotEmpty()){
             markButtonEnable()
         }
     }

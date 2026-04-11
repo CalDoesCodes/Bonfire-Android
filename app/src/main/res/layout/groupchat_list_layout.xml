@@ -43,7 +43,7 @@
 
             <include
                 android:id="@+id/make_groupchat"
-                layout="@layout/groupchat_make_layout"/>
+                layout="@layout/groupchat_make_button"/>
 
 
             <TextView
