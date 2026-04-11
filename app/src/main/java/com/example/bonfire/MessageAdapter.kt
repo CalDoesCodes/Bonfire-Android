@@ -84,6 +84,9 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
             holder.messageRelativeLayout.setOnClickListener {
                 unspoilerImage(holder.messageImageView, holder.messageSpoilerButton)
             }
+            holder.messageSpoilerButton.setOnClickListener {
+                unspoilerImage(holder.messageImageView, holder.messageSpoilerButton)
+            }
         } else{
             unspoilerImage(holder.messageImageView, holder.messageSpoilerButton)
         }
