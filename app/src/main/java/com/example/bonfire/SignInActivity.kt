@@ -37,6 +37,7 @@ class SignInActivity : AppCompatActivity() {
         val switchButton: Button = findViewById(R.id.signin_switch_button)
         switchButton.setOnClickListener {
             val intent = Intent(this, SignUpActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
             finish()
         }
@@ -57,6 +58,7 @@ class SignInActivity : AppCompatActivity() {
                         // Sign in success, update UI with the signed-in user's information
                         Log.d(TAG, "signInWithEmail:success")
                         val intent = Intent(this, GroupChatListActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         startActivity(intent)
                         finish()
                     } else {

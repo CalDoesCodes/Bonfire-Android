@@ -162,7 +162,7 @@ class GroupChatListActivity : AppCompatActivity() {
         val friendView = LayoutInflater.from(this).inflate(R.layout.groupchat_layout, groupChatList, false)
 
         val friendName : TextView = friendView.findViewById(R.id.text_chat_list_user)
-        friendName.text = (friendData["name"] ?: "Anonymous").toString()
+        friendName.text = (friendData["displayName"] ?: "Anonymous").toString()
 
         val friendAvatarView : ShapeableImageView = friendView.findViewById(R.id.text_chat_list_avatar)
         val avatar = (friendData["avatar"] ?: "").toString()
