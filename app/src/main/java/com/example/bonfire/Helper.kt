@@ -13,12 +13,14 @@ import android.os.Build
 import android.util.Log
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat.startActivity
 import com.bumptech.glide.Glide
+import com.bumptech.glide.request.RequestOptions.bitmapTransform
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.Firebase
@@ -328,5 +330,7 @@ public class Helper {
         }
     }
 
-
+    fun makeToast(context: Context, text:String){
+        Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+    }
 }

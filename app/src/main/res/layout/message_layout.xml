@@ -29,6 +29,7 @@
         app:cardElevation="0dp"
         android:layout_marginStart="6dp">
         <LinearLayout
+            android:minWidth="100dp"
             android:orientation="vertical"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -56,17 +57,30 @@
                 android:text="Lorem ipsum is a dummy or placeholder text commonly used in graphic design, publishing, and web development. Its purpose is to permit a page layout to be designed, independently of the copy that will subsequently populate it, or to demonstrate various fonts of a typeface without meaningful text that could be distracting..."
                 android:textSize="16sp" />
 
-            <ImageView
-                android:id="@+id/message_image"
+            <RelativeLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:maxWidth="260dp"
-                android:adjustViewBounds="true"
-                android:layout_marginTop="4dp"
-                app:layout_constraintTop_toBottomOf="@id/message_text"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintStart_toEndOf="@id/message_timestamp"
-                android:src="@drawable/default_pfp"/>
+                android:id="@+id/message_image_RelativeLayout">
+                <ImageView
+                    android:id="@+id/message_image"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxWidth="260dp"
+                    android:adjustViewBounds="true"
+                    android:layout_marginTop="4dp"
+                    android:src="@drawable/default_pfp"
+                    app:tint="@android:color/black"/>
+                <Button
+                    android:id="@+id/message_spoiler_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" SPOILER "
+                    android:textColor="@color/white"
+                    android:backgroundTint="@color/semi_dark_brown"
+                    style="@style/Widget.Material3.Button.IconButton.Filled"
+                    android:layout_centerInParent="true">
+                </Button>
+            </RelativeLayout>
 
 
         <!-- Voice Message -->
@@ -112,7 +126,7 @@
                 android:id="@+id/message_timestamp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="11/14/2025 "
+                android:text="03:35 PM"
                 android:textSize="12sp"/>
             <ImageView
                 android:id="@+id/check_read"
