@@ -1,5 +1,8 @@
 package com.example.bonfire
 
+import android.app.Activity
+import android.app.AlertDialog
+import android.content.Context
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.media.MediaMetadataRetriever
@@ -18,8 +21,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
 import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.imageview.ShapeableImageView
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -33,8 +38,10 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
     private val TAG = "Message Adapter"
     var mRecyclerView: RecyclerView? = null
 
+
     // Akin to onCreate method to initialize each instance (each message)
     inner class ItemViewHolder(view: View): RecyclerView.ViewHolder(view){
+        val messageCard : CardView = view.findViewById(R.id.message_card)
         val displayNameTextView: TextView = view.findViewById(R.id.message_user)
         val avatarURLTextView: ImageView = view.findViewById(R.id.message_profile)
         val textTextView: TextView = view.findViewById(R.id.message_text)
@@ -105,6 +112,15 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
             holder.voiceMessageLength.text = getVoiceDuration(voicePath)
         }
 
+        // on click listener to pull up account view
+        val context = holder.itemView.context
+        holder.displayNameTextView.setOnClickListener {
+            showAccountModal(context, message["senderId"] as String)
+        }
+        holder.avatarURLTextView.setOnClickListener {
+            showAccountModal(context, message["senderId"] as String)
+        }
+
         // Only display read marks in DMs
         // if most recent show check mark (sent) or double check mark (read)
         if(inPrivateChat && position == itemCount - 1 && (message["senderId"] == uid)){
@@ -114,6 +130,48 @@ class MessageAdapter(private val data: ArrayList<Map<String, Any>?>, val inPriva
             holder.checkReadImageView.visibility = View.VISIBLE
         }
     }
+
+    /**
+     * A popup to view another users info.
+     */
+    fun showAccountModal(context : Context, accountId: String){
+        val activity = context as Activity
+        val dialogView = activity.layoutInflater.inflate(R.layout.account_view_modal, null)
+
+        val accountUserText: TextView = dialogView.findViewById(R.id.account_name)
+        val accountDisplayUserText: TextView = dialogView.findViewById(R.id.account_displayName)
+        val accountEmailText: TextView = dialogView.findViewById(R.id.account_email)
+        val accountBioText : TextView = dialogView.findViewById(R.id.account_bio)
+        val accountAvatarImageView: ShapeableImageView = dialogView.findViewById(R.id.account_avatar)
+
+        // get data of user and update view
+        val db = Firebase.firestore
+        val userRef = db.collection("users").document(accountId)
+        userRef.get()
+        .addOnSuccessListener { document ->
+            if (document != null && document.exists()) {
+                Log.d(TAG, "DocumentSnapshot data: ${document.data}")
+                val data = document.data
+                accountUserText.text = (data?.get("name") ?: "") as String
+                accountDisplayUserText.text = (data?.get("displayName") ?: "") as String
+                accountEmailText.text = (data?.get("email") ?: "") as String
+                accountBioText.text = (data?.get("bio") ?: "") as String
+                val avatarPath = (data?.get("avatar") ?: "") as String
+                helper.setProfilePicture(context, avatarPath, accountAvatarImageView)
+            }else {
+                Log.d(TAG, "No such document")
+            }
+        }
+        .addOnFailureListener { exception ->
+            Log.d(TAG, "get failed with ", exception)
+        }
+
+        val builder = AlertDialog.Builder(context)
+        val dialog = builder.create()
+        dialog.setView(dialogView)
+        dialog.show()
+    }
+
 
     fun unspoilerImage(messageImageView: ImageView, messageSpoilerButton: Button){
         messageImageView.imageTintList = null
