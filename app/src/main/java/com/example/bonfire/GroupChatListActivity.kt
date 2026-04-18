@@ -25,6 +25,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
+import java.time.LocalDate
+import java.time.Period
+import java.time.temporal.ChronoUnit
+import java.util.Date
 
 
 class GroupChatListActivity : AppCompatActivity() {
@@ -35,6 +39,7 @@ class GroupChatListActivity : AppCompatActivity() {
     private fun notifPrefs() = getSharedPreferences("notif_limits", MODE_PRIVATE)
     private fun limitEnabledKey(friendId: String) = "limit_enabled_$friendId"
     private fun unopenedKey(friendId: String) = "unopened_$friendId"
+    lateinit var userData : MutableMap<String, Any>
 
 
     /**
@@ -59,7 +64,7 @@ class GroupChatListActivity : AppCompatActivity() {
                     val globalChat = findViewById<View>(R.id.global_chat)
                     generateOpenChatButton(globalChat.findViewById<CardView>(R.id.card_chat_list_message), null, ChatType.GLOBAL, "Global Chat", "")
 
-                    val userData = document.data
+                    userData = document.data!!
                     // Get all user friends and call populateFriendList() to create cards for each private chat
                     val userFriends = userData?.get("friends") as? List<*>
 
@@ -195,8 +200,10 @@ class GroupChatListActivity : AppCompatActivity() {
         val avatar = (friendData["avatar"] ?: "").toString()
         helper.setProfilePicture(this, avatar, friendAvatarView)
 
+        val is18Plus : Boolean = (friendData["is18Plus"] ?: false) as Boolean
+
         // Generate button listener that will open chat with friend
-        generateOpenChatButton(groupChatView, chatId, ChatType.GROUP, avatar, friendName.text as String)
+        generateOpenChatButton(groupChatView, chatId, ChatType.GROUP, avatar, friendName.text as String, is18Plus = is18Plus)
 
         val groupChatOwner : String = (friendData["createdBy"] ?: "") as String
 
@@ -346,7 +353,14 @@ class GroupChatListActivity : AppCompatActivity() {
      * @param friendView view that the button is targeting
      * @param friendId Id of friend to find the chat to open
      */
-    private fun generateOpenChatButton(friendView: View, friendId: String?, chatType: ChatType, avatar:String, name:String) : CardView {
+    private fun generateOpenChatButton(
+        friendView: View,
+        friendId: String?,
+        chatType: ChatType,
+        avatar: String,
+        name: String,
+        is18Plus: Boolean = false
+    ) : CardView {
         val button = friendView.findViewById<CardView>(R.id.card_chat_list_message)
         Log.d(TAG, "Sets up the button to open a specific chat $chatType $friendId $avatar $name")
 
@@ -365,6 +379,42 @@ class GroupChatListActivity : AppCompatActivity() {
             finish()
         }
         return button
+    }
+
+    fun userCanJoin18Plus(
+        friendView: View,
+        friendId: String?,
+        chatType: ChatType,
+        avatar: String,
+        name: String
+    ) : Boolean{
+        val userBirthDate : LocalDate = (userData["birthDate"] ?: LocalDate.now()) as LocalDate
+        val userAge : Long = ChronoUnit.YEARS.between(userBirthDate, LocalDate.now())
+        val userIs18Plus : Boolean = userAge >= 18
+        if (userIs18Plus){
+
+        }
+        TODO()
+//        A user is prompted upon first time trying to open an 18+ mobile chat.
+//
+//        A user under the age of 18 will be informed that the chat contains mature content and they will be removed from the chat.
+//
+//        A user over the age of 18 will be informed that the chat contains mature content and ask if they wish to proceed.
+//
+//        A user over the age of 18 will be allowed into the chat upon accepting the prompt.
+//
+//        A user over the age of 18 will be removed from the chat upon denying the prompt.
+//
+//        A user is able to confirm they are 18+ and enter the mobile chat.
+//
+//        A user is able to deny they are 18+ and not be able to open the mobile chat.
+//
+//        A user is removed from the 18+ mobile chat upon denying they are over 18
+//
+//        A user is able to toggle the 18+ mode for a group chat upon creating it on mobile.
+//
+//        A user is prompted upon turning on the toggle for an 18+ mobile chat.
+        return true
     }
 
 
