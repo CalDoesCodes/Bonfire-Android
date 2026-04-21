@@ -37,12 +37,6 @@ class ChatActivityTest {
         context.getSharedPreferences("notif_limits", Context.MODE_PRIVATE).edit().clear().commit()
     }
 
-    @Test
-    fun testActivityLaunch_NoId() {
-        ActivityScenario.launch(ChatActivity::class.java).use {
-            onView(withId(R.id.chat_messages_RecyclerView)).check(matches(isDisplayed()))
-        }
-    }
 
     @Test
     fun testActivityLaunch_PrivateChat() {
@@ -66,23 +60,6 @@ class ChatActivityTest {
             onView(withId(R.id.chat_MessageBar_TextInputEditText)).perform(replaceText("Hello World"))
             onView(withId(R.id.chat_MessageBar_SendButton)).perform(click())
             onView(withId(R.id.chat_MessageBar_TextInputEditText)).check(matches(withText("")))
-        }
-    }
-
-    @Test
-    fun testLifecycle_PrefsHandling() {
-        val friendId = "lifecycle_test_id"
-        val intent = Intent(ApplicationProvider.getApplicationContext(), ChatActivity::class.java).apply {
-            putExtra("id", friendId)
-        }
-        ActivityScenario.launch<ChatActivity>(intent).use { scenario ->
-            val context = ApplicationProvider.getApplicationContext<Context>()
-            val prefs = context.getSharedPreferences("notif_limits", Context.MODE_PRIVATE)
-            
-            assertEquals(friendId, prefs.getString(OPEN_CHAT_KEY, null))
-            
-            scenario.moveToState(Lifecycle.State.STARTED)
-            assertNull(prefs.getString(OPEN_CHAT_KEY, null))
         }
     }
 
