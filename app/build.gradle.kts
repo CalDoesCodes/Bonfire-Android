@@ -112,7 +112,6 @@ val jacocoTestReport by tasks.registering(JacocoReport::class) {
         "**/R\$*.class",
         "**/BuildConfig.*",
         "**/Manifest*.*",
-        "**/*Test*.*",
         "android/**/*.*"
     )
 
