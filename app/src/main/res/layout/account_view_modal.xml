@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <androidx.cardview.widget.CardView
+        style="@style/CardStyle"
+        android:id="@+id/account_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="20dp">
+
+                <!--USER PAGE-->
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/account_avatar"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@drawable/default_pfp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="16dp"
+                    app:shapeAppearanceOverlay="@style/Circular" />
+
+                <TextView
+                    android:id="@+id/account_displayName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Loading..."
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/account_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Loading..."
+                    android:textSize="16sp"
+                    android:padding="2dp"/>
+                <TextView
+                    android:id="@+id/account_email"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="loading@gmail.com..."
+                    android:textSize="16sp"
+                    android:padding="2dp"/>
+
+                <TextView
+                    android:id="@+id/account_bio"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Loading bio..."
+                    android:textSize="16sp"
+                    android:maxWidth="250dp"
+                    android:padding="8dp" />
+            </LinearLayout>
+        </ScrollView>
+    </androidx.cardview.widget.CardView>
+</LinearLayout>

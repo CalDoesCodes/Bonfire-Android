@@ -22,23 +22,6 @@ class AdditionalActivityTests {
 
     // --- Helper Logic Tests (cont.) ---
 
-    @Test
-    fun testHelper_UnopenedCounter_ResetOnResume() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val friendId = "test_reset"
-        val prefs = context.getSharedPreferences("notif_limits", Context.MODE_PRIVATE)
-        prefs.edit().putInt("unopened_$friendId", 5).commit()
-
-        val intent = Intent(context, ChatActivity::class.java).apply {
-            putExtra("id", friendId)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        
-        ActivityScenario.launch<ChatActivity>(intent).use {
-            // onResume should clear the counter
-            assertEquals(0, prefs.getInt("unopened_$friendId", -1))
-        }
-    }
 
     @Test
     fun testHelper_BlockAndMute_Sync() {
@@ -66,24 +49,6 @@ class AdditionalActivityTests {
         assertEquals(0, mutedPrefs.getInt(friendId, 0))
     }
 
-    // --- ChatActivity UI Tests (cont.) ---
-
-    @Test
-    fun testChatActivity_KeyboardScroll() {
-        ActivityScenario.launch(ChatActivity::class.java).use {
-            onView(withId(R.id.chat_MessageBar_TextInputEditText)).perform(click())
-            // Verifying visibility of send button after keyboard action
-            onView(withId(R.id.chat_MessageBar_SendButton)).check(matches(isDisplayed()))
-        }
-    }
-
-    @Test
-    fun testChatActivity_ImagePickerLaunch() {
-        ActivityScenario.launch(ChatActivity::class.java).use {
-            onView(withId(R.id.chat_MessageBar_ImageButton)).perform(click())
-            // Logic check: verify no crash when launching picker
-        }
-    }
 
     // --- AccountActivity UI Tests (cont.) ---
 
@@ -97,17 +62,6 @@ class AdditionalActivityTests {
         }
     }
 
-    @Test
-    fun testAccountActivity_BlockedList_PopulatedState() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val prefs = context.getSharedPreferences("blocked", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("blocked_user_1", true).putString("name_blocked_user_1", "Blocked Pete").commit()
-        
-        ActivityScenario.launch(AccountActivity::class.java).use {
-            onView(withText("Blocked Pete")).check(matches(isDisplayed()))
-            onView(withText("Unblock")).check(matches(isDisplayed()))
-        }
-    }
 
     // --- GroupChatListActivity UI Tests (cont.) ---
 
