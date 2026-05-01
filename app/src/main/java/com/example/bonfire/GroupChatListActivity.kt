@@ -61,7 +61,7 @@ class GroupChatListActivity : AppCompatActivity() {
 
                     // Open global chat button
                     val globalChat = findViewById<View>(R.id.global_chat)
-                    generateOpenChatButton(globalChat.findViewById<CardView>(R.id.card_chat_list_message), null, ChatType.GLOBAL, "Global Chat", "")
+                    generateOpenChatButton(globalChat.findViewById<CardView>(R.id.card_chat_list_message), "", ChatType.GLOBAL, "Global Chat", "")
 
                     userData = document.data!!
                     // Get all user friends and call populateFriendList() to create cards for each private chat

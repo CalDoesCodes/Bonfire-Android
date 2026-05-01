@@ -1,5 +1,6 @@
 package com.example.bonfire
 
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -16,6 +17,7 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
+import java.util.Calendar
 
 
 class SignUpActivity : AppCompatActivity() {
@@ -31,6 +33,20 @@ class SignUpActivity : AppCompatActivity() {
         auth = Firebase.auth
         TAG = "signup"
 
+        val birthdateEditText: TextInputEditText = findViewById(R.id.signup_birthdate_edit)
+        birthdateEditText.setOnClickListener {
+            val calendar = Calendar.getInstance()
+            val year = calendar.get(Calendar.YEAR)
+            val month = calendar.get(Calendar.MONTH)
+            val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+            val datePickerDialog = DatePickerDialog(this, { _, selectedYear, selectedMonth, selectedDay ->
+                val dateString = "${selectedYear}-${selectedMonth + 1}-${selectedDay}"
+                birthdateEditText.setText(dateString)
+            }, year, month, day)
+            datePickerDialog.show()
+        }
+
         // Button to switch to main screen activity
         val signupButton: Button = findViewById(R.id.signup_button)
         signupButton.setOnClickListener {
@@ -43,8 +59,10 @@ class SignUpActivity : AppCompatActivity() {
 
             val passwordEditText: TextInputEditText = findViewById(R.id.signup_password_edit)
             val passwordString = passwordEditText.getText().toString()
+            
+            val birthdateString = birthdateEditText.getText().toString()
 
-            signUp(auth, db,usernameString, emailString, passwordString)
+            signUp(auth, db, usernameString, emailString, passwordString, birthdateString)
         }
 
         // switch to sign in activity
@@ -62,16 +80,16 @@ class SignUpActivity : AppCompatActivity() {
         Toast.makeText(baseContext, string, Toast.LENGTH_SHORT).show()
     }
 
-    fun signUp (auth: FirebaseAuth, db: FirebaseFirestore, username:String, email:String, password:String) {
-        if (username == "" || email == "" || password == "") {
+    fun signUp (auth: FirebaseAuth, db: FirebaseFirestore, username:String, email:String, password:String, birthdate: String) {
+        if (username == "" || email == "" || password == "" || birthdate == "") {
             // pop alert if not all fields filled
             makeToast("Please fill out all fields")
             return
         }
-        makeAccount(auth, db, username, email, password)
+        makeAccount(auth, db, username, email, password, birthdate)
     }
 
-    fun makeAccount(auth: FirebaseAuth, db: FirebaseFirestore, username:String, email:String, password:String){
+    fun makeAccount(auth: FirebaseAuth, db: FirebaseFirestore, username:String, email:String, password:String, birthdate: String){
         // Attempt to create user
         auth.createUserWithEmailAndPassword(email, password)
         .addOnCompleteListener(this) { task ->
@@ -100,6 +118,7 @@ class SignUpActivity : AppCompatActivity() {
                                         "name" to username,
                                         "friends" to arrayOf("ps3Q2NASt3hTeb2b5cJ8"),
                                         "displayName" to username,
+                                        "birthdate" to birthdate
                                     )
                                     db.collection("users").document(uid.toString()).set(data)
 
@@ -139,4 +158,3 @@ class SignUpActivity : AppCompatActivity() {
 //            "auth/email-already-in-use" ->"An account with this email already exists."
     }
 }
-
