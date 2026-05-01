@@ -70,7 +70,9 @@ class SignUpActivity : AppCompatActivity() {
         switchButton.setOnClickListener {
             val intent = Intent(this, SignInActivity::class.java)
             startActivity(intent)
-            finish()
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
         }
     }
 
@@ -120,6 +122,7 @@ class SignUpActivity : AppCompatActivity() {
                                     db.collection("users").document(uid.toString()).set(data)
 
                                     val intent = Intent(this, GroupChatListActivity::class.java)
+                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                     startActivity(intent)
                                     finish()
                                 }.addOnFailureListener { e ->

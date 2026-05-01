@@ -26,6 +26,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
 
+data class FriendWithTimestamp(
+    val friendId: String,
+    val friendData: Map<String, Any>,
+    val latestTimestamp: Long
+)
 
 class GroupChatListActivity : AppCompatActivity() {
     val TAG = "GroupChatListActivity"
@@ -104,6 +109,7 @@ class GroupChatListActivity : AppCompatActivity() {
 
     /**
      * Generate list of friends, with a button that will open the specific private message with them
+     * sorts by recent message
      *
      * @param db: Firebase database to get backend information from
      * @param userFriends: List of friend ids
@@ -111,24 +117,59 @@ class GroupChatListActivity : AppCompatActivity() {
     private fun populateFriendList(db: FirebaseFirestore, userFriends:List<String>, groupChatList: LinearLayout) {
         val blockedPref : SharedPreferences = getSharedPreferences("blocked", MODE_PRIVATE)
 
-        for (friendId in userFriends) {
-            // Skip if blocked
-            if (blockedPref.getBoolean(friendId, false)) continue
+        val friendList = mutableListOf<FriendWithTimestamp>()
+        var remaining = userFriends.size
 
-            // Find data of friend
-            val docRef = db.collection("users").document(friendId)
-            docRef.get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    val friendData = document.data ?: return@addOnSuccessListener
-                    // Friend data found
-                    addFriendView(friendData, friendId, blockedPref, groupChatList)
-                } else {
-                    Log.d(TAG, "No such document")
-                }
+        if (remaining == 0) return
+
+        for (friendId in userFriends) {
+
+            if (blockedPref.getBoolean(friendId, false)) {
+                remaining--
+                continue
             }
-            .addOnFailureListener { exception ->
-                Log.d(TAG, "get failed with ", exception)
+
+            val userRef = db.collection("users").document(friendId)
+
+            userRef.get().addOnSuccessListener { userDoc ->
+                val friendData = userDoc.data ?: emptyMap()
+
+                // Build chatId
+                val chatIdArray = arrayOf(uid ?: "me", friendId)
+                chatIdArray.sort()
+                val chatId = chatIdArray.joinToString("_")
+
+                // Query latest message directly
+                db.collection("chats")
+                .document(chatId)
+                .collection("messages")
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .limit(1)
+                .get()
+                .addOnSuccessListener { msgDocs ->
+                    val latestTimestamp = if (!msgDocs.isEmpty) {
+                        val ts = msgDocs.documents[0].getTimestamp("timestamp")
+                        ts?.toDate()?.time ?: 0L
+                    } else 0L
+
+                    friendList.add(
+                        FriendWithTimestamp(friendId, friendData, latestTimestamp)
+                    )
+
+                    remaining--
+                    if (remaining == 0) {
+                        friendList.sortByDescending { it.latestTimestamp }
+
+                        for (friend in friendList) {
+                            addFriendView(
+                                friend.friendData,
+                                friend.friendId,
+                                blockedPref,
+                                groupChatList
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -136,17 +177,57 @@ class GroupChatListActivity : AppCompatActivity() {
 
     /**
      * Generate list of group chats that include the user, with a button that will open the group chat
+     * also sorts by most recent message
      *
      * @param db: Firebase database to get backend information from
      */
-    fun populateGroupChatList(db: FirebaseFirestore, groupChatList: LinearLayout){
-        // Return all group chats that include the user
-        val groupChatRef = db.collection("groupChats").whereArrayContains("memberIds", uid!!)
+    fun populateGroupChatList(db: FirebaseFirestore, groupChatList: LinearLayout) {
+        val groupChatRef = db.collection("groupChats")
+            .whereArrayContains("memberIds", uid!!)
+
         groupChatRef.get()
         .addOnSuccessListener { documents ->
-            for (document in documents){
+
+            val chatList = mutableListOf<Pair<Map<String, Any>, Pair<String, Long>>>()
+            var remaining = documents.size()
+
+            if (remaining == 0) return@addOnSuccessListener
+
+            for (document in documents) {
                 val chatData = document.data
-                addGroupChatView(chatData, document.id, groupChatList)
+                val chatId = document.id
+
+                db.collection("groupChats")
+                .document(chatId)
+                .collection("messages")
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .limit(1)
+                .get()
+                .addOnSuccessListener { msgDocs ->
+
+                    val latestTimestamp = if (!msgDocs.isEmpty) {
+                        val ts = msgDocs.documents[0].getTimestamp("timestamp")
+                        ts?.toDate()?.time ?: 0L
+                    } else {
+                        0L
+                    }
+
+                    chatList.add(chatData to (chatId to latestTimestamp))
+
+                    remaining--
+                    if (remaining == 0) {
+                        // All queries finished → sort + render
+                        chatList.sortByDescending { it.second.second }
+
+                        for ((data, pair) in chatList) {
+                            val id = pair.first
+                            addGroupChatView(data, id, groupChatList)
+                        }
+                    }
+                }
+                .addOnFailureListener {
+                    remaining--
+                }
             }
         }
         .addOnFailureListener { exception ->
@@ -162,7 +243,7 @@ class GroupChatListActivity : AppCompatActivity() {
         val friendView = LayoutInflater.from(this).inflate(R.layout.groupchat_layout, groupChatList, false)
 
         val friendName : TextView = friendView.findViewById(R.id.text_chat_list_user)
-        friendName.text = (friendData["name"] ?: "Anonymous").toString()
+        friendName.text = (friendData["displayName"] ?: "Anonymous").toString()
 
         val friendAvatarView : ShapeableImageView = friendView.findViewById(R.id.text_chat_list_avatar)
         val avatar = (friendData["avatar"] ?: "").toString()
