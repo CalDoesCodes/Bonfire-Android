@@ -23,6 +23,7 @@ import androidx.core.content.edit
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
@@ -38,9 +39,12 @@ class GroupChatListActivity : AppCompatActivity() {
     val uid = FirebaseAuth.getInstance().currentUser?.uid
     val db = Firebase.firestore
     val helper = Helper()
+    private fun firstTimeOpenedPrefs() = getSharedPreferences("first_time_chat_opened", MODE_PRIVATE)
+    private fun firstTimeOpenedKey(chatId: String) = "first_time_chat_opened_$chatId"
     private fun notifPrefs() = getSharedPreferences("notif_limits", MODE_PRIVATE)
     private fun limitEnabledKey(friendId: String) = "limit_enabled_$friendId"
     private fun unopenedKey(friendId: String) = "unopened_$friendId"
+    lateinit var userData : MutableMap<String, Any>
 
 
     /**
@@ -65,7 +69,7 @@ class GroupChatListActivity : AppCompatActivity() {
                     val globalChat = findViewById<View>(R.id.global_chat)
                     generateOpenChatButton(globalChat.findViewById<CardView>(R.id.card_chat_list_message), "", ChatType.GLOBAL, "Global Chat", "")
 
-                    val userData = document.data
+                    userData = document.data!!
                     // Get all user friends and call populateFriendList() to create cards for each private chat
                     val userFriends = userData?.get("friends") as? List<*>
 
@@ -294,7 +298,6 @@ class GroupChatListActivity : AppCompatActivity() {
         val friendAvatarView : ShapeableImageView = groupChatView.findViewById(R.id.text_chat_list_avatar)
         val avatar = (friendData["avatar"] ?: "").toString()
         helper.setProfilePicture(this, avatar, friendAvatarView)
-
         // Generate button listener that will open chat with friend
         generateOpenChatButton(groupChatView, chatId, ChatType.GROUP, avatar, friendName.text as String)
 
@@ -306,6 +309,47 @@ class GroupChatListActivity : AppCompatActivity() {
 
         //Add the friendView to the groupChatList parent Linear Layout
         groupChatList.addView(groupChatView)
+
+    }
+
+    fun check18PlusConsent(friendData:Map<String, Any>, chatId:String, groupChatList: LinearLayout, groupChatView: View, friendName:String, avatar:String) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Sensitive Content")
+        builder.setMessage("This group chat has sensitive content. Are you 18 years or older?")
+
+        builder.setPositiveButton("Yes") { _, _ ->
+            // User agreed, run the success code
+            // Generate button listener that will open chat with friend
+            generateOpenChatButton(groupChatView, chatId, ChatType.GROUP, avatar, friendName)
+
+            val groupChatOwner : String = (friendData["createdBy"] ?: "") as String
+
+            // generate options menu 3 dots on click listener
+            val optionsButton = groupChatView.findViewById<ImageButton>(R.id.chat_options)
+            setUpOptionsGroupChatButton(optionsButton, chatId, groupChatList, groupChatView, groupChatOwner)
+
+            //Add the friendView to the groupChatList parent Linear Layout
+            groupChatList.addView(groupChatView)
+        }
+
+        builder.setNegativeButton("No") { _, _ ->
+            // User denied, perform cleanup
+            handleUserRemoval(chatId, groupChatList, groupChatView)
+        }
+
+        builder.setCancelable(false) // Prevent clicking outside the box to bypass
+        builder.show()
+    }
+
+    private fun handleUserRemoval(groupChatId:String, groupChatList:LinearLayout, groupChatView: View) {
+        val groupChatRef = db.collection("groupChats").document(groupChatId)
+        // This removes the specific ID from the "members" array
+        groupChatRef.update("memberIds", FieldValue.arrayRemove(uid))
+            .addOnSuccessListener {
+                Log.d(TAG, "Group chat successfully deleted! $groupChatId")
+                helper.makeToast(this, "You have been removed.")
+                groupChatList.removeView(groupChatView)
+            }
     }
 
     fun setUpOptionsGroupChatButton(optionsButton: ImageButton, groupChatId: String, groupChatList : LinearLayout,
@@ -502,13 +546,62 @@ class GroupChatListActivity : AppCompatActivity() {
         }
     }
 
+    // im so sorry caleb
+    private fun generateOpenGroupChatButton(
+        friendView: View,
+        friendId: String?,
+        chatType: ChatType,
+        avatar: String,
+        name: String,
+        friendData:Map<String, Any>,
+        groupChatList: LinearLayout,
+        groupChatView: View
+    ) : CardView? {
+        val userIs18Plus : Boolean = (userData["isOver18"] ?: false) as Boolean
+        val chatIs18Plus : Boolean = (friendData["is18Plus"] ?: false) as Boolean
+        if (!userIs18Plus && chatIs18Plus){
+            check18PlusConsent(friendData, friendId.toString(), groupChatList, groupChatView, name, avatar)
+        } else{
+            val button = friendView.findViewById<CardView>(R.id.card_chat_list_message)
+            Log.d(TAG, "Sets up the button to open a specific chat $chatType $friendId $avatar $name")
+
+            button.setOnClickListener {
+                val userIs18Plus : Boolean = (userData["isOver18"] ?: false) as Boolean
+                val chatIs18Plus : Boolean = (friendData["is18Plus"] ?: false) as Boolean
+                if (!userIs18Plus && chatIs18Plus) {
+                    check18PlusConsent(friendData, chatId, groupChatList, groupChatView, name, avatar)
+                }
+
+                val intent = Intent(this, ChatActivity::class.java)
+
+                // Passes friendID to chat activity
+                if (friendId != null) {
+                    intent.putExtra("com.example.bonfire.chatType", chatType.toString())
+                    intent.putExtra("com.example.bonfire.id", friendId)
+                    intent.putExtra("com.example.bonfire.avatar", avatar)
+                    intent.putExtra("com.example.bonfire.name", name)
+                }
+
+                ContextCompat.startActivity(this, intent, null)
+                finish()
+            }
+            return button
+        }
+    }
+
     /**
      * Sets up the button to open a specific chat
      *
      * @param friendView view that the button is targeting
      * @param friendId Id of friend to find the chat to open
      */
-    private fun generateOpenChatButton(friendView: View, friendId: String?, chatType: ChatType, avatar:String, name:String) : CardView {
+    private fun generateOpenChatButton(
+        friendView: View,
+        friendId: String?,
+        chatType: ChatType,
+        avatar: String,
+        name: String,
+    ) : CardView {
         val button = friendView.findViewById<CardView>(R.id.card_chat_list_message)
         Log.d(TAG, "Sets up the button to open a specific chat $chatType $friendId $avatar $name")
 
@@ -528,7 +621,6 @@ class GroupChatListActivity : AppCompatActivity() {
         }
         return button
     }
-
 
     /**
      * Displays a red dot next to chats from users who've sent messages
