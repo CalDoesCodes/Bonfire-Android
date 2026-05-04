@@ -116,6 +116,7 @@ class SignUpActivity : AppCompatActivity() {
                                         "bio" to "Welcome to Bonfire!",
                                         "email" to email,
                                         "name" to username,
+                                        "friends" to arrayOf("ps3Q2NASt3hTeb2b5cJ8"),
                                         "displayName" to username,
                                         "birthdate" to birthdate
                                     )
