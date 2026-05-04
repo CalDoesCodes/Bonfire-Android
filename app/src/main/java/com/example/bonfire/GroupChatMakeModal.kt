@@ -1,5 +1,6 @@
 package com.example.bonfire
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
@@ -10,6 +11,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.Switch
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.core.widget.addTextChangedListener
@@ -23,6 +25,7 @@ import com.google.firebase.storage.storage
 /**
  * Modal popup for creating a group chat.
  */
+@SuppressLint("UseSwitchCompatOrMaterialCode")
 internal class GroupChatMakeModal {
     val addedFriendIDs = mutableListOf<String>()
     val helper = Helper()
@@ -33,6 +36,7 @@ internal class GroupChatMakeModal {
 
     lateinit var dialogView : View
     lateinit var createBtn : Button
+    lateinit var switch18Plus : Switch
     lateinit var linearLayout : LinearLayout
     lateinit var editText :TextInputEditText
 
@@ -44,6 +48,7 @@ internal class GroupChatMakeModal {
         this.context = context
         linearLayout = dialogView.findViewById(R.id.groupchat_make_modal_linearLayout)
         editText = dialogView.findViewById(R.id.groupChat_edit)
+        switch18Plus = dialogView.findViewById(R.id.groupchat_make_18_switch)
         createBtn = dialogView.findViewById(R.id.createBtn)
 
         val builder = AlertDialog.Builder(context)
@@ -148,6 +153,7 @@ internal class GroupChatMakeModal {
                     "createdAt" to Timestamp.now(),
                     "createdBy" to uid,
                     "memberIds" to addedFriendIDs,
+                    "is18Plus" to switch18Plus.isChecked,
                     "name" to chatName,
                     "type" to "group"
                 )
