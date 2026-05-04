@@ -1,7 +1,6 @@
 package com.example.bonfire
 
 import android.content.Context
-import android.content.Intent
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.onView
@@ -77,7 +76,7 @@ class AdditionalActivityTests {
     fun testGroupChatList_LoadingStateVisibility() {
         ActivityScenario.launch(GroupChatListActivity::class.java).use {
             // Loading might be removed quickly, but we check if it's at least valid
-            onView(withId(R.id.list_messages_LinearLayout)).check(matches(isDisplayed()))
+            onView(withId(R.id.pinned_LinearLayout)).check(matches(isDisplayed()))
         }
     }
 

@@ -30,31 +30,55 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:layout_weight="1">
+
         <LinearLayout
-            android:id="@+id/list_messages_LinearLayout"
             android:orientation="vertical"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingBottom="20dp">
+            android:layout_height="wrap_content">
 
-            <include
-                android:id="@+id/global_chat"
-                layout="@layout/globalchat_layout"/>
-
-            <include
-                android:id="@+id/make_groupchat"
-                layout="@layout/groupchat_make_button"/>
-
-
-            <TextView
-                android:id="@+id/groupchat_list_loading"
-                android:layout_marginTop="16dp"
-                android:layout_width="wrap_content"
-                android:text="Loading..."
-                android:textSize="20sp"
-                android:textStyle="italic"
+            <LinearLayout
+                android:id="@+id/pinned_LinearLayout"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center" />
+                android:paddingBottom="20dp">
+
+                <include
+                    android:id="@+id/global_chat"
+                    layout="@layout/globalchat_layout"/>
+
+                <include
+                    android:id="@+id/make_groupchat"
+                    layout="@layout/groupchat_make_button"/>
+
+
+                <TextView
+                    android:id="@+id/groupchat_list_loading"
+                    android:layout_marginTop="16dp"
+                    android:layout_width="wrap_content"
+                    android:text="Loading..."
+                    android:textSize="20sp"
+                    android:textStyle="italic"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/groupchat_LinearLayout_notpinned"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="20dp">
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/list_messages_LinearLayout_notpinned"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="20dp">
+            </LinearLayout>
+
         </LinearLayout>
     </ScrollView>
 

@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.view.ViewManager
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -72,10 +73,8 @@ class GroupChatListActivity : AppCompatActivity() {
                     if (!userFriends.isNullOrEmpty()){
                         @Suppress("UNCHECKED_CAST")
                         // dynamically generate friend view in list
-                        val groupChatList : LinearLayout = findViewById(R.id.list_messages_LinearLayout)
-
-                        populateFriendList(db, userFriends as List<String>, groupChatList)
-                        populateGroupChatList(db, groupChatList)
+                        populateFriendList(db, userFriends as List<String>)
+                        populateGroupChatList(db)
 
                         // create group chat button
                         val createGroupChat = findViewById<View>(R.id.make_groupchat)
@@ -85,7 +84,7 @@ class GroupChatListActivity : AppCompatActivity() {
                         }
                     } else{
                         // Add text if user has no friends
-                        val groupChatList : LinearLayout = findViewById(R.id.list_messages_LinearLayout)
+                        val groupChatList : LinearLayout = findViewById(R.id.pinned_LinearLayout)
                         val noFriendText = TextView(this)
                         noFriendText.text = "You have no friends. Send a request!"
                         noFriendText.setPadding(24, 24, 24, 24)
@@ -114,8 +113,9 @@ class GroupChatListActivity : AppCompatActivity() {
      * @param db: Firebase database to get backend information from
      * @param userFriends: List of friend ids
      */
-    private fun populateFriendList(db: FirebaseFirestore, userFriends:List<String>, groupChatList: LinearLayout) {
+    private fun populateFriendList(db: FirebaseFirestore, userFriends:List<String>) {
         val blockedPref : SharedPreferences = getSharedPreferences("blocked", MODE_PRIVATE)
+        val pinPrefs : SharedPreferences = getSharedPreferences("pins", MODE_PRIVATE)
 
         val friendList = mutableListOf<FriendWithTimestamp>()
         var remaining = userFriends.size
@@ -161,11 +161,19 @@ class GroupChatListActivity : AppCompatActivity() {
                         friendList.sortByDescending { it.latestTimestamp }
 
                         for (friend in friendList) {
+                            val linearLayout : LinearLayout
+                            // category
+                            if (pinPrefs.getBoolean(friend.friendId, false)){
+                                linearLayout = findViewById(R.id.pinned_LinearLayout)
+                            } else{
+                                linearLayout = findViewById(R.id.list_messages_LinearLayout_notpinned)
+                            }
+
                             addFriendView(
                                 friend.friendData,
                                 friend.friendId,
                                 blockedPref,
-                                groupChatList
+                                linearLayout
                             )
                         }
                     }
@@ -181,7 +189,9 @@ class GroupChatListActivity : AppCompatActivity() {
      *
      * @param db: Firebase database to get backend information from
      */
-    fun populateGroupChatList(db: FirebaseFirestore, groupChatList: LinearLayout) {
+    fun populateGroupChatList(db: FirebaseFirestore) {
+        val pinPrefs : SharedPreferences = getSharedPreferences("pins", MODE_PRIVATE)
+
         val groupChatRef = db.collection("groupChats")
             .whereArrayContains("memberIds", uid!!)
 
@@ -221,7 +231,16 @@ class GroupChatListActivity : AppCompatActivity() {
 
                         for ((data, pair) in chatList) {
                             val id = pair.first
-                            addGroupChatView(data, id, groupChatList)
+
+                            val linearLayout : LinearLayout
+                            // category
+                            if (pinPrefs.getBoolean(id, false)){
+                                linearLayout = findViewById(R.id.pinned_LinearLayout)
+                            } else{
+                                linearLayout = findViewById(R.id.groupchat_LinearLayout_notpinned)
+                            }
+
+                            addGroupChatView(data, id, linearLayout)
                         }
                     }
                 }
@@ -294,6 +313,12 @@ class GroupChatListActivity : AppCompatActivity() {
         optionsButton.setOnClickListener { view ->
             val popup = PopupMenu(this, view)
             popup.menuInflater.inflate(R.menu.groupchat_options_menu, popup.menu)
+
+            val pinPrefs : SharedPreferences = getSharedPreferences("pins", MODE_PRIVATE)
+            var chatPinned = pinPrefs.getBoolean(groupChatId, false)
+            val pinItem = popup.menu.findItem(R.id.action_pin)
+            pinItem.title = if (chatPinned) "Unpin" else "Pin"
+
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     // Delete group chat button
@@ -330,6 +355,32 @@ class GroupChatListActivity : AppCompatActivity() {
                         }
                         true
                     }
+                    R.id.action_pin -> {
+                        chatPinned = !chatPinned
+
+                        val pinned_linearLayout : LinearLayout = findViewById(R.id.pinned_LinearLayout)
+                        val unpinned_linearLayout : LinearLayout = findViewById(R.id.list_messages_LinearLayout_notpinned)
+
+                        // toggle pin and move to correct linearlayout if toggled
+
+                        val parent = groupChatView.parent as? ViewGroup
+                        parent?.removeView(groupChatView)
+
+                        // not pinned -> pinned
+                        if (chatPinned) {
+                            pinned_linearLayout.addView(groupChatView)
+                        }
+                        // pinned -> not pinned
+                        else{
+                            unpinned_linearLayout.addView(groupChatView)
+                        }
+
+                        pinPrefs.edit {
+                            putBoolean(groupChatId, chatPinned)
+                        }
+
+                        true
+                    }
                     else -> false
                 }
             }
@@ -351,10 +402,14 @@ class GroupChatListActivity : AppCompatActivity() {
      */
     private fun setUpOptionsButton(optionsButton: ImageButton, friendId: String, friendName: CharSequence,
                                    groupChatList : LinearLayout, blockedPref : SharedPreferences, friendView: View){
-
         optionsButton.setOnClickListener { view ->
             val popup = PopupMenu(this, view)
             popup.menuInflater.inflate(R.menu.chat_options_menu, popup.menu)
+
+            val pinPrefs : SharedPreferences = getSharedPreferences("pins", MODE_PRIVATE)
+            var chatPinned = pinPrefs.getBoolean(friendId, false)
+            val pinItem = popup.menu.findItem(R.id.action_pin)
+            pinItem.title = if (chatPinned) "Unpin" else "Pin"
 
             // Update Mute menu item text based on current state
             val sharedPref = this.getSharedPreferences("muted", MODE_PRIVATE)
@@ -410,6 +465,32 @@ class GroupChatListActivity : AppCompatActivity() {
                             }
                         } else{
                             Toast.makeText(baseContext, "Notifications limited from ${friendName}", Toast.LENGTH_SHORT).show()
+                        }
+
+                        true
+                    }
+                    R.id.action_pin -> {
+                        chatPinned = !chatPinned
+
+                        val pinned_linearLayout : LinearLayout = findViewById(R.id.pinned_LinearLayout)
+                        val unpinned_linearLayout : LinearLayout = findViewById(R.id.groupchat_LinearLayout_notpinned)
+
+                        // toggle pin and move to correct linearlayout if toggled
+
+                        val parent = friendView.parent as? ViewGroup
+                        parent?.removeView(friendView)
+
+                        // not pinned -> pinned
+                        if (chatPinned) {
+                            pinned_linearLayout.addView(friendView)
+                        }
+                        // pinned -> not pinned
+                        else{
+                            unpinned_linearLayout.addView(friendView)
+                        }
+
+                        pinPrefs.edit {
+                            putBoolean(friendId, chatPinned)
                         }
 
                         true

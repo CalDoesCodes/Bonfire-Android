@@ -3,4 +3,7 @@
     <item
         android:id="@+id/action_delete"
         android:title="Delete group chat" />
+    <item
+        android:id="@+id/action_pin"
+        android:title="Pin"/>
 </menu>

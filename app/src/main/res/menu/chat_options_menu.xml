@@ -9,4 +9,7 @@
     <item
         android:id="@+id/action_limit"
         android:title="Limit notifications" />
+    <item
+        android:id="@+id/action_pin"
+        android:title="Pin"/>
 </menu>
