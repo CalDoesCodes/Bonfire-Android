@@ -12,7 +12,7 @@ git clone <https://github.com/UWP-Bonfire/Bonfire-Android>
 Open project in android studio and hit 'run'.
 
 # Project Structure 
-.
+```.
 ├── app/
 │   ├── src/
 │   │   ├── main/
@@ -37,3 +37,4 @@ Open project in android studio and hit 'run'.
 │   └── wrapper/                  # Gradle wrapper files
 │
 └── build.gradle / settings.gradle
+```
