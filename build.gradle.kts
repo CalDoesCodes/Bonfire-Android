@@ -15,7 +15,7 @@ sonar {
         property("sonar.projectName", "Bonfire")
         property("sonar.projectVersion", "1.0")
         property("sonar.host.url", "http://localhost:9000")
-        property("sonar.token", "your-sonar-token")
+        property("sonar.token", "daa09547c3bbfc90650992f527b2c2c2bc813e2f")
         property("sonar.sourceEncoding", "UTF-8")
         // These paths point to the :app module's outputs
         property("sonar.androidLint.reportPaths", "app/build/reports/lint-results-debug.xml")
